@@ -392,7 +392,7 @@ intellidoc/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/nitingupta95/intellidoc.git
+git clone https://github.com/nitingupta954/intellidoc.git
 cd intellidoc
 ```
 
@@ -954,5 +954,5 @@ npm test
 ---
 
 <p align="center">
-  Built with ❤️ by <a href="https://github.com/nitingupta95">Nitin Gupta</a>
+  Built with ❤️ by <a href="https://github.com/nitingupta954">Nitin Gupta</a>
 </p>
