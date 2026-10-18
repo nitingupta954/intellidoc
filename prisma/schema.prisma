@@ -1,0 +1,428 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Payment Enums ──────────────────────────────────────────
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+// ── User ───────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  password      String?
+  email         String?   @unique
+  role          String?   @default("user")
+  emailVerified DateTime?
+  image         String?
+  openaiKey     String?   @db.Text
+  geminiKey     String?   @db.Text
+  notificationPrefs Json?
+
+  // Subscription fields
+  plan                   Plan      @default(FREE)
+  subscriptionStatus     SubscriptionStatus?
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?
+  currentPeriodEnd       DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  workspaces    Workspace[]
+  workspaceMembers WorkspaceMember[]
+  documents     Document[]
+  conversations Conversation[]
+  accounts      Account[]
+  sessions      Session[]
+  payments      Payment[]
+  subscriptions Subscription[]
+  creditWallet  CreditWallet?
+  sharedLinks   SharedLink[]
+}
+
+// ── Payment ────────────────────────────────────────────────
+
+model Payment {
+  id                 String        @id @default(cuid())
+  userId             String
+  razorpayOrderId    String        @unique
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  amount             Int           // Amount in paise (₹499 = 49900)
+  currency           String        @default("INR")
+  status             PaymentStatus @default(PENDING)
+  plan               Plan
+  receipt            String?
+  notes              Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([razorpayOrderId])
+}
+
+// ── Subscription ───────────────────────────────────────────
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  plan                   Plan
+  status                 SubscriptionStatus @default(PENDING)
+  startDate              DateTime           @default(now())
+  endDate                DateTime?
+  razorpaySubscriptionId String?
+  cancelledAt            DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Webhook Events (idempotency) ───────────────────────────
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique   // Razorpay event ID for dedup
+  eventType   String              // e.g. "payment.captured"
+  payload     Json
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([eventId])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+
+  owner       User     @relation(fields:[ownerId], references:[id])
+
+  members     WorkspaceMember[]
+  documents   Document[]
+  folders     Folder[]
+  sharedLinks SharedLink[]
+  knowledgeBases KnowledgeBase[]
+  invitations Invitation[]
+  conversations Conversation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KnowledgeBase {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  documents   Document[]
+  conversations Conversation[]
+}
+
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  workspaceId String
+  parentId    String?  // Optional for nested folders
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parent      Folder?    @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Folder[]   @relation("FolderToFolder")
+  documents   Document[]
+
+  @@index([workspaceId])
+  @@index([parentId])
+}
+
+model SharedLink {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  resourceId  String   // Document ID, Conversation ID, or Folder ID
+  resourceType String  // 'DOCUMENT', 'CONVERSATION', 'FOLDER'
+  workspaceId String
+  createdBy   String
+  expiresAt   DateTime?
+  accessCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([resourceId])
+}
+
+model WorkspaceMember {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole
+
+  workspace   Workspace @relation(fields:[workspaceId], references:[id], onDelete: Cascade)
+  user        User      @relation(fields:[userId], references:[id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, userId])
+}
+
+model Invitation {
+  id          String @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole
+  token       String @unique
+  status      InviteStatus
+  expiresAt   DateTime
+  invitedBy   String
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields:[workspaceId], references:[id], onDelete: Cascade)
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  uploadedBy      String
+  filename        String
+  mimeType        String
+  storageKey      String
+  status          String   @default("PENDING") // PENDING, INGESTING, READY, FAILED, CANCELLED
+  progress        Int      @default(0)
+  currentStep     String?
+  chunkCount      Int?
+  embeddingModel  String?
+  errorMessage    String?
+  jobId           String?
+  summary         String?   @db.Text
+  suggestedQuestions Json?
+  
+  // Existing fields kept
+  title           String?
+  fileSize        Int?
+  knowledgeBaseId String?
+  folderId        String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User           @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  knowledgeBase   KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id], onDelete: SetNull)
+  folder          Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  
+  conversations   Conversation[]
+  chunks          Chunk[]
+
+  @@index([workspaceId])
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+  workspaceId String
+  title       String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  metadata    Json?
+  knowledgeBaseId String?
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id], onDelete: SetNull)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents   Document[]
+  messages    Message[]
+
+  @@index([userId])
+}
+
+model Message {
+  id                String   @id @default(cuid())
+  conversationId    String
+  role              String   // USER, ASSISTANT, SYSTEM
+  content           String   @db.Text
+  citations         Json?
+  confidence        Float?
+  hallucinationScore Float?
+  hasWarning        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  // RAGAS evaluation scores (null for unevaluated messages, -1 for evaluation errors)
+  faithfulness      Float?   // [0,1]: all claims in answer are supported by context
+  answerRelevancy   Float?   // [0,1]: answer addresses the question
+  contextPrecision  Float?   // [0,1]: relevant chunks ranked higher (average precision)
+  contextRecall     Float?   // [0,1]: context covers all info needed to answer
+
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  citationsRefs     Citation[]
+  feedbacks         MessageFeedback[]
+
+  @@index([conversationId])
+}
+
+model Citation {
+  id          String   @id @default(cuid())
+  messageId   String
+  docId       String
+  chunkId     String
+  pageNumber  Int
+  excerpt     String   @db.Text
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model MessageFeedback {
+  id          String   @id @default(cuid())
+  messageId   String   @unique
+  rating      String   // thumbs_up or thumbs_down
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Chunk {
+  id          String   @id @default(cuid())
+  documentId  String
+  text        String
+  createdAt   DateTime @default(now())
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Credit & Billing ───────────────────────────────────────
+
+model CreditWallet {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  balance       Int      @default(0)      // in Credits, integer, never float
+  lifetimeGranted Int    @default(0)
+  lifetimeSpent   Int    @default(0)
+  lowBalanceWarnedAt DateTime?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  transactions  CreditTransaction[]
+}
+
+enum CreditTxType {
+  SIGNUP_GRANT
+  PURCHASE
+  DEBIT_CHAT
+  DEBIT_EMBEDDING
+  DEBIT_VOICE
+  DEBIT_SUMMARY
+  REFUND
+  ADJUSTMENT
+}
+
+enum CreditTxStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model CreditTransaction {
+  id              String         @id @default(cuid())
+  walletId        String
+  wallet          CreditWallet   @relation(fields: [walletId], references: [id])
+  type            CreditTxType
+  status          CreditTxStatus @default(COMPLETED)
+  amount          Int            // positive = credit, negative = debit
+  balanceAfter    Int?           // snapshot for audit trail
+  razorpayOrderId String?        @unique
+  razorpayPaymentId String?      @unique
+  metadata        Json?          // { model, promptTokens, completionTokens, audioSeconds, requestId, conversationId }
+  createdAt       DateTime       @default(now())
+
+  @@index([walletId, createdAt])
+  @@index([razorpayOrderId])
+}
+
