@@ -1,7 +1,7 @@
 import { env } from '../env';
 
 // Base API URL config
-export const API_BASE_URL = env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = env.API_URL;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const uploadDocument = async (file: File, metadata: Record<string, any> = {}) => {
