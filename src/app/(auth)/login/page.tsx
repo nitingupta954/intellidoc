@@ -18,7 +18,7 @@ const GoogleIcon = ({ size = 24, className = "" }: { size?: number, className?: 
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
@@ -33,18 +33,26 @@ export default function LoginPage() {
     try {
       const res = await signIn("credentials", {
         redirect: false,
-        email,
+        email: identifier.trim(),
         password,
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        if (res.error.includes("verify") || res.error.includes("EMAIL_NOT_VERIFIED")) {
+          setError("Please verify your email address before logging in.");
+        } else {
+          setError("Invalid email/username or password");
+        }
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        // Full navigation ensures newly set session cookies are reliably sent to the server
+        window.location.href = "/dashboard";
       }
-    } catch {
-      setError("An error occurred");
+    } catch (err: any) {
+      if (err?.message?.includes("verify") || err?.message?.includes("EMAIL_NOT_VERIFIED")) {
+        setError("Please verify your email address before logging in.");
+      } else {
+        setError("Invalid email/username or password");
+      }
     } finally {
       setLoading(false);
     }
@@ -73,19 +81,30 @@ export default function LoginPage() {
         {error && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm text-center">
             {error}
+            {error.includes("verify") && (
+              <div className="mt-2">
+                <Link
+                  href={`/verify-email?email=${encodeURIComponent(identifier.trim())}`}
+                  className="underline font-semibold hover:text-foreground"
+                >
+                  Go to Email Verification
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="email">Email</label>
+            <label className="text-sm font-medium" htmlFor="identifier">Email or Username</label>
             <input 
-              id="email"
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com" 
+              id="identifier"
+              type="text" 
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="name@example.com or username" 
               required
+              autoComplete="username"
               className="w-full px-3 py-2 bg-background/50 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
@@ -102,6 +121,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className="w-full px-3 py-2 bg-background/50 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>

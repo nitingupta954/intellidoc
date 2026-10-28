@@ -4,10 +4,12 @@ import { NextResponse, type NextRequest } from "next/server";
 // without importing the full auth config (which pulls in Prisma, bcrypt, etc.)
 // This keeps the Edge Function under Vercel's 1 MB size limit.
 export default function middleware(req: NextRequest) {
-  // NextAuth v5 stores the JWT session in this cookie
+  // NextAuth stores the JWT session in one of these cookies depending on version and environment
   const sessionToken =
     req.cookies.get("authjs.session-token")?.value ||
-    req.cookies.get("__Secure-authjs.session-token")?.value;
+    req.cookies.get("__Secure-authjs.session-token")?.value ||
+    req.cookies.get("next-auth.session-token")?.value ||
+    req.cookies.get("__Secure-next-auth.session-token")?.value;
 
   const isLoggedIn = !!sessionToken;
   const { pathname } = req.nextUrl;
