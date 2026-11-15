@@ -38,8 +38,7 @@ function VerifyEmailForm() {
         throw new Error(signInRes.error === "CredentialsSignin" ? "Invalid or expired OTP." : signInRes.error);
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch (err) {
       if (err instanceof Error) setError(err.message);
     } finally {

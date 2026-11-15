@@ -99,26 +99,26 @@ single chunk contains a verbatim answer. RAG is designed to combine information 
 
 Return ONLY valid JSON (no markdown, no extra text) with exactly three fields:
 
-{
-  "topic_relevance": <float 0.0–1.0>,
+{{
+  "topic_relevance": <float 0.0-1.0>,
   "answerability": "<DIRECT|SYNTHESIZABLE|INSUFFICIENT>",
-  "reasoning": "<1–2 sentences>"
-}
+  "reasoning": "<1-2 sentences>"
+}}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FIELD DEFINITIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. topic_relevance (float 0.0–1.0)
+1. topic_relevance (float 0.0-1.0)
    How relevant are these chunks to the domain/topic of the question?
    1.0 = chunks are directly about the topic of the question
    0.5 = chunks are loosely related (same broad domain, different sub-topic)
    0.0 = chunks are completely unrelated to the question's subject matter
 
    Calibration examples:
-   - Chunks about "vertical scaling" + question about "scaling strategies" → 1.0
-   - Chunks about "scaling" + question about "Python syntax" → 0.0
-   - Chunks about "database scaling" + question about "best database vendor" → 0.3–0.4
+   - Chunks about "vertical scaling" + question about "scaling strategies" -> 1.0
+   - Chunks about "scaling" + question about "Python syntax" -> 0.0
+   - Chunks about "database scaling" + question about "best database vendor" -> 0.3-0.4
      (scaling patterns are on-topic but vendor recommendations are absent)
 
    CRITICAL: If topic_relevance < 0.2, you MUST set answerability = "INSUFFICIENT"
@@ -134,13 +134,13 @@ FIELD DEFINITIONS
      No single chunk states the answer, BUT the set contains enough on-topic facts
      that a faithful, non-hallucinated answer CAN be composed by combining information
      across chunks. Use SYNTHESIZABLE when:
-     • The question asks for a COMPARISON and the chunks describe both sides separately.
-     • The question asks for IMPLICATIONS and the chunks describe the causes.
-     • The question asks for TRADE-OFFS and the chunks describe the properties of each option.
-     • The question asks for a RECOMMENDATION and the chunks give enough facts to reason from.
+     - The question asks for a COMPARISON and the chunks describe both sides separately.
+     - The question asks for IMPLICATIONS and the chunks describe the causes.
+     - The question asks for TRADE-OFFS and the chunks describe the properties of each option.
+     - The question asks for a RECOMMENDATION and the chunks give enough facts to reason from.
      Example: question = "which is better, vertical or horizontal scaling?"
               chunk A describes vertical scaling's ceiling, chunk B describes horizontal
-              scaling's mechanism → SYNTHESIZABLE (the comparison is a valid synthesis).
+              scaling's mechanism -> SYNTHESIZABLE (the comparison is a valid synthesis).
 
    INSUFFICIENT:
      Use INSUFFICIENT when:
@@ -149,7 +149,7 @@ FIELD DEFINITIONS
          The answer would require facts that are simply absent from the chunks.
      Example: question = "which specific database vendor should I use?"
               chunks describe generic scaling patterns without naming any vendors
-              → INSUFFICIENT (vendor names are absent; synthesis cannot add them).
+              -> INSUFFICIENT (vendor names are absent; synthesis cannot add them).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CRITICAL RULES — READ CAREFULLY
@@ -159,8 +159,8 @@ CRITICAL RULES — READ CAREFULLY
 - Do NOT return SYNTHESIZABLE if the required facts are simply absent from all chunks.
   Synthesis can only combine facts that ARE in the chunks, not invent new ones.
 - Exact-trivia questions ("what is 2+2", "who is the president") against domain documents
-  → topic_relevance = 0.0, answerability = "INSUFFICIENT".
-- A mix of one strong and several weak chunks → judge on the BEST chunks in the set,
+  -> topic_relevance = 0.0, answerability = "INSUFFICIENT".
+- A mix of one strong and several weak chunks -> judge on the BEST chunks in the set,
   not the average. If the strong chunk(s) can anchor an answer, that counts.
 """
 

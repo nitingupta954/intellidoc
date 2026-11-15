@@ -300,7 +300,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center items-center gap-6">
             <Link href="/privacy" className="hover:text-gray-900 dark:hover:text-white/60 transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-900 dark:hover:text-white/60 transition-colors">Terms</Link> 
-            <Link href="https://github.com/nitingupta95/intellidoc" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 dark:hover:text-white/60 transition-colors">GitHub</Link>
+            <Link href="https://github.com/nitingupta954/intellidoc" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 dark:hover:text-white/60 transition-colors">GitHub</Link>
             <Link href="/contact" className="hover:text-gray-900 dark:hover:text-white/60 transition-colors">Contact</Link>
           </div>
         </div>

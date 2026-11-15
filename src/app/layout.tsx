@@ -46,7 +46,7 @@ export default function RootLayout({
               name: "IntelliDoc AI",
               url: env.NEXT_PUBLIC_SITE_URL,
               logo: `${env.NEXT_PUBLIC_SITE_URL}/favicon.ico`,
-              sameAs: ["https://github.com/nitingupta95/intellidoc"]
+              sameAs: ["https://github.com/nitingupta954/intellidoc"]
             }}
           />
           <AuthProvider>

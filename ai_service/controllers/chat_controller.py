@@ -35,7 +35,7 @@ async def handle_chat_query(
 ):
     try:
         t0 = time.perf_counter()
-        logger.error(f"CHAT ENDPOINT REACHED FOR QUERY: {request.query}")
+        logger.debug(f"Chat endpoint reached for query: {request.query}")
 
         user_id = fastapi_req.headers.get("x-user-id") if fastapi_req else None
         uses_system_key = fastapi_req.headers.get("x-uses-system-key", "true").lower() == "true" if fastapi_req else False
