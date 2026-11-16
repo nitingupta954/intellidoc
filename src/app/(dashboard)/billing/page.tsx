@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BillingSettings } from "@/components/settings/BillingSettings";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import {
   Table,
   TableBody,
@@ -62,22 +64,18 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <PageContainer className="flex h-full items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-6">
-      <header className="shrink-0">
-        <h1 className="text-3xl font-heading font-bold tracking-tight">
-          Billing & Plans
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your subscription and view payment history.
-        </p>
-      </header>
+    <PageContainer className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-6">
+      <PageHeader
+        title="Billing & Plans"
+        description="Manage your subscription and view payment history."
+      />
 
 
 
@@ -181,6 +179,6 @@ export default function BillingPage() {
         )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

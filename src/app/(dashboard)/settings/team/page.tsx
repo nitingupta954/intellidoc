@@ -3,6 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useTeamSettings } from "@/hooks/use-team-settings";
 import { WorkspaceDialog } from "@/components/team/workspace-dialog";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { InviteDialog } from "@/components/team/invite-dialog";
 import { MembersTable } from "@/components/team/members-table";
 
@@ -48,31 +50,24 @@ export default function TeamSettingsPage() {
 
   if (!activeWorkspaceId) {
     return (
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-heading mb-2">Team Settings</h1>
-            <p className="text-muted-foreground">Manage your team workspaces</p>
-          </div>
-        </div>
+      <PageContainer className="space-y-8">
+        <PageHeader title="Team Settings" description="Manage your team workspaces" />
         <div className="glass-panel border-border/50 p-12 text-center rounded-xl space-y-4">
           <h2 className="text-xl font-semibold">No workspace selected</h2>
           <p className="text-muted-foreground mb-6">Create a workspace to start collaborating with your team.</p>
           {workspaceDialogElement}
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-heading mb-2">Team Settings</h1>
-          <p className="text-muted-foreground">Manage members and roles for {activeWorkspace?.name}</p>
-        </div>
-        {workspaceDialogElement}
-      </div>
+    <PageContainer className="space-y-8">
+      <PageHeader
+        title="Team Settings"
+        description={`Manage members and roles for ${activeWorkspace?.name}`}
+        actions={workspaceDialogElement}
+      />
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Members</h2>
@@ -97,6 +92,6 @@ export default function TeamSettingsPage() {
         currentUserId={session?.user?.id}
         onRemoveMember={handleRemoveMember}
       />
-    </div>
+    </PageContainer>
   );
 }

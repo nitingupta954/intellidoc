@@ -1,127 +1,99 @@
 "use client";
 
 import Link from "next/link";
-import { 
-  Folder as FolderIcon, 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  MessageSquare, 
-  MoreVertical, 
-  Trash2 
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { MobileDrawer } from "@/components/layout/mobile-drawer";
+import { FileText, Folder as FolderIcon } from "lucide-react";
+
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DocumentActions,
+  DocumentStatus,
+  getDocumentName,
+} from "@/components/documents/document-table";
+import { formatDate, formatFileSize, formatMimeType } from "@/lib/format";
 
 interface DocumentCardsProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  displayedFolders: any[];
+  folders?: any[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  displayedDocuments: any[];
-  setCurrentFolderId: (id: string | null) => void;
-  setDocumentToDelete: (id: string | null) => void;
-  formatMimeType: (mime: string) => string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  router: any;
+  documents: any[];
+  onOpenFolder?: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export function DocumentCards({
-  displayedFolders,
-  displayedDocuments,
-  setCurrentFolderId,
-  setDocumentToDelete,
-  formatMimeType,
-  router,
+  folders = [],
+  documents,
+  onOpenFolder,
+  onDelete,
 }: DocumentCardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:hidden">
-      {displayedFolders.map((folder) => (
-        <div 
-          key={`folder-${folder.id}`} 
-          className="glass-panel p-4 flex flex-col gap-3 cursor-pointer hover:bg-background/40" 
-          onClick={() => setCurrentFolderId(folder.id)}
+    <div className="space-y-3 md:hidden">
+      {folders.map((folder) => (
+        <button
+          key={`folder-${folder.id}`}
+          type="button"
+          onClick={() => onOpenFolder?.(folder.id)}
+          className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-card transition-colors hover:bg-muted/40"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-              <FolderIcon size={16} />
-            </div>
-            <span className="font-medium text-sm line-clamp-1">{folder.name}</span>
-          </div>
-        </div>
-      ))}
-      {displayedDocuments.map((doc, i) => (
-        <div key={doc.id || i} className="glass-panel p-4 flex flex-col gap-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <FileText size={16} />
-              </div>
-              <div className="flex flex-col">
-                <Link 
-                  href={`/documents/${doc.id}`} 
-                  className="font-medium text-sm line-clamp-1 hover:text-primary transition-colors"
-                >
-                  {doc.title || doc.filename}
-                </Link>
-                <span className="text-xs text-muted-foreground">
-                  {(doc.fileSize / 1024 / 1024).toFixed(2)} MB • {formatMimeType(doc.mimeType)}
-                </span>
-              </div>
-            </div>
-            <MobileDrawer 
-              title={doc.title} 
-              description="Document Actions"
-              trigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">
-                  <MoreVertical size={16} />
-                </Button>
-              }
-            >
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => router.push(`/documents/${doc.id}`)}
-                  variant="outline" 
-                  className="w-full justify-start h-12 rounded-xl"
-                >
-                  <FileText className="mr-2 h-4 w-4" /> View Details
-                </Button>
-                <Button 
-                  onClick={() => router.push(`/chat?documentId=${doc.id}&documentTitle=${encodeURIComponent(doc.title)}`)}
-                  variant="outline" 
-                  className="w-full justify-start h-12 rounded-xl"
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" /> Chat with Document
-                </Button>
-                <Button 
-                  onClick={() => setDocumentToDelete(doc.id)}
-                  variant="outline" 
-                  className="w-full justify-start h-12 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </Button>
-              </div>
-            </MobileDrawer>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-xs text-muted-foreground">
-              {new Date(doc.createdAt).toLocaleDateString()}
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-info-soft text-info">
+            <FolderIcon className="size-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-foreground">
+              {folder.name}
             </span>
-            <div className="flex items-center gap-1">
-              {doc.status === 'INDEXED' ? (
-                <span className="text-green-500 text-[10px] font-medium bg-green-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Indexed
-                </span>
-              ) : doc.status === 'UPLOADED' || doc.status === 'PROCESSING' ? (
-                <span className="text-amber-500 text-[10px] font-medium bg-amber-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Clock size={12} className="animate-pulse" /> Processing
-                </span>
-              ) : (
-                <span className="text-destructive text-[10px] font-medium bg-destructive/10 px-2 py-0.5 rounded-full">Error</span>
-              )}
-            </div>
-          </div>
-        </div>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Folder · created {formatDate(folder.createdAt)}
+            </span>
+          </span>
+          <span className="text-xs text-muted-foreground">Open</span>
+        </button>
       ))}
+
+      {documents.map((doc) => {
+        const name = getDocumentName(doc);
+        return (
+          <article
+            key={doc.id}
+            className="rounded-xl border border-border bg-card p-4 shadow-card"
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <FileText className="size-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/documents/${doc.id}`}
+                  className="block truncate text-sm font-medium text-foreground hover:underline"
+                  title={doc.filename || name}
+                >
+                  {name}
+                </Link>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <Badge tone="neutral" size="sm">
+                    {formatMimeType(doc.mimeType)}
+                  </Badge>
+                  <span>{formatFileSize(doc.fileSize || 0)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{formatDate(doc.createdAt)}</span>
+                </div>
+              </div>
+              <DocumentActions doc={doc} onDelete={onDelete} showChat />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Avatar name={doc.user?.name || doc.user?.email} size="sm" />
+                <span className="truncate text-xs text-muted-foreground">
+                  {doc.user?.name || doc.user?.email || "Unknown"}
+                </span>
+              </div>
+              <DocumentStatus doc={doc} />
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

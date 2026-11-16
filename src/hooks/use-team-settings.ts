@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "@/store/workspace-store";
+import { useCreateWorkspace } from "@/hooks/use-create-workspace";
 import { toast } from "sonner";
 
 export function useTeamSettings() {
-  const { activeWorkspaceId, workspaces, loadWorkspaces, setActiveWorkspace } = useWorkspaceStore();
+  const { activeWorkspaceId, workspaces } = useWorkspaceStore();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [members, setMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,10 +15,16 @@ export function useTeamSettings() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newWorkspaceName, setNewWorkspaceName] = useState("");
-  const [newWorkspaceDesc, setNewWorkspaceDesc] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const {
+    isCreateOpen,
+    setIsCreateOpen,
+    newWorkspaceName,
+    setNewWorkspaceName,
+    newWorkspaceDesc,
+    setNewWorkspaceDesc,
+    isCreating,
+    handleCreateWorkspace,
+  } = useCreateWorkspace();
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const isOwnerOrAdmin = activeWorkspace?.role === "OWNER" || activeWorkspace?.role === "ADMIN";
@@ -84,36 +91,6 @@ export function useTeamSettings() {
       }
     } catch {
       toast.error("An error occurred");
-    }
-  };
-
-  const handleCreateWorkspace = async () => {
-    if (!newWorkspaceName.trim()) {
-      toast.error("Workspace name is required");
-      return;
-    }
-    setIsCreating(true);
-    try {
-      const res = await fetch("/api/workspaces", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newWorkspaceName, description: newWorkspaceDesc }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("Workspace created");
-        setIsCreateOpen(false);
-        setNewWorkspaceName("");
-        setNewWorkspaceDesc("");
-        await loadWorkspaces();
-        setActiveWorkspace(data.workspace.id);
-      } else {
-        toast.error(data.error || "Failed to create workspace");
-      }
-    } catch {
-      toast.error("An error occurred");
-    } finally {
-      setIsCreating(false);
     }
   };
 

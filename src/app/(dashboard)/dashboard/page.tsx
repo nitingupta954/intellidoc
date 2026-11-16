@@ -12,6 +12,9 @@ import { formatDistanceToNow } from "date-fns";
 import { getDashboardData } from "@/lib/dashboard-data";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ActivityRow } from "@/components/dashboard/activity-row";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -30,20 +33,19 @@ export default async function DashboardPage() {
   } = await getDashboardData(userId);
 
   return (
-    <div className="h-full flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-y-auto overflow-x-hidden pb-6">
-      {/* TOP BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-heading font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Overview of your intelligent document workspace.</p>
-        </div>
-        <Link href="/documents">
-          <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">
-            <FileText size={18} />
-            Upload Document
-          </button>
-        </Link>
-      </div>
+    <PageContainer className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-6">
+      <PageHeader
+        title="Dashboard"
+        description="Overview of your intelligent document workspace."
+        actions={
+          <Button asChild>
+            <Link href="/documents">
+              <FileText className="size-4" />
+              Upload Document
+            </Link>
+          </Button>
+        }
+      />
 
       {/* STAT CARDS ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -143,6 +145,6 @@ export default async function DashboardPage() {
         </div>
 
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -14,7 +14,7 @@ export default function NotFound() {
         <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
         
         <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-          The page or document you are looking for doesn't exist or has been moved. Let's get you back to safety.
+          The page or document you are looking for doesn&apos;t exist or has been moved. Let&apos;s get you back to safety.
         </p>
         
         <Button asChild size="lg" className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-full px-8">

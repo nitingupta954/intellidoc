@@ -10,6 +10,8 @@ import { useProfileSettings } from "@/hooks/use-profile-settings";
 import { useNotificationSettings } from "@/hooks/use-notification-settings";
 import { useSecuritySettings } from "@/hooks/use-security-settings";
 import { useApiKeys } from "@/hooks/use-api-keys";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
@@ -20,11 +22,11 @@ export default function SettingsPage() {
   const apiKeys = useApiKeys();
 
   return (
-    <div className="h-full flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="shrink-0">
-        <h1 className="text-3xl font-heading font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account preferences and configurations.</p>
-      </header>
+    <PageContainer className="flex h-full flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageHeader
+        title="Settings"
+        description="Manage your account preferences and configurations."
+      />
 
       <div className="flex flex-col md:flex-row gap-8 flex-1 min-h-0 overflow-y-auto pb-6">
         {/* Sidebar Nav */}
@@ -113,6 +115,6 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

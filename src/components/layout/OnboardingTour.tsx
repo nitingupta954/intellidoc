@@ -75,42 +75,43 @@ export function OnboardingTour() {
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          primaryColor: '#3b82f6', // Tailwind blue-500
-          textColor: '#1f2937',
-          backgroundColor: '#ffffff',
-          overlayColor: 'rgba(0, 0, 0, 0.6)',
+          primaryColor: 'var(--primary)',
+          textColor: 'var(--foreground)',
+          backgroundColor: 'var(--card)',
+          overlayColor: 'var(--overlay)',
           zIndex: 1000,
         },
         tooltip: {
           borderRadius: '16px',
           padding: '24px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: 'var(--shadow-overlay)',
         },
         tooltipTitle: {
           fontSize: '1.25rem',
           fontWeight: 700,
           marginBottom: '12px',
-          color: '#111827',
+          color: 'var(--foreground)',
         },
         tooltipContent: {
           fontSize: '0.95rem',
           lineHeight: 1.6,
-          color: '#4b5563',
+          color: 'var(--muted-foreground)',
           textAlign: 'left' as const,
         },
         buttonNext: {
-          backgroundColor: '#3b82f6',
+          backgroundColor: 'var(--primary)',
+          color: 'var(--primary-foreground)',
           borderRadius: '8px',
           padding: '10px 16px',
           fontWeight: 500,
         },
         buttonBack: {
           marginRight: '12px',
-          color: '#6b7280',
+          color: 'var(--muted-foreground)',
           fontWeight: 500,
         },
         buttonSkip: {
-          color: '#9ca3af',
+          color: 'var(--muted-foreground)',
           fontWeight: 500,
         }
       }}

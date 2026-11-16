@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { FileText, MessageSquare, AlertCircle } from "lucide-react";
@@ -64,7 +65,7 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
           <p className="text-sm text-muted-foreground mt-1">Shared by {sharedLink.user?.name || "Anonymous"}</p>
         </div>
         <Button variant="outline" asChild>
-          <a href="/">Go to IntelliDoc</a>
+          <Link href="/">Go to IntelliDoc</Link>
         </Button>
       </div>
 

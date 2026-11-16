@@ -1,9 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { UploadQueueItem } from "@/components/documents/upload-section";
+import { formatFileSize } from "@/lib/format";
+
+const ACCEPTED_EXTENSIONS = ["pdf", "docx", "pptx", "txt", "md", "csv", "json"];
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+function validateFile(file: File): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() || "";
+  if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+    return "Unsupported file type. Use PDF, DOCX, PPTX, TXT, MD, CSV, or JSON.";
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return `File is ${formatFileSize(file.size)}. The limit is 20 MB.`;
+  }
+  return null;
+}
 
 export function useDocuments() {
   const { activeWorkspaceId } = useWorkspaceStore();
@@ -39,7 +54,7 @@ export function useDocuments() {
     }
   }, [activeWorkspaceId]);
 
-  const fetchDocuments = async (silent = false) => {
+  const fetchDocuments = useCallback(async (silent = false) => {
     if (!activeWorkspaceId) return;
     try {
       if (!silent) setLoadingDocs(true);
@@ -51,9 +66,9 @@ export function useDocuments() {
     } finally {
       if (!silent) setLoadingDocs(false);
     }
-  };
+  }, [activeWorkspaceId]);
 
-  const fetchFolders = async () => {
+  const fetchFolders = useCallback(async () => {
     if (!activeWorkspaceId) return;
     try {
       const res = await fetch(`/api/folders?workspaceId=${activeWorkspaceId}`);
@@ -62,7 +77,7 @@ export function useDocuments() {
     } catch (error) {
       console.error("Failed to fetch folders", error);
     }
-  };
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
     if (activeWorkspaceId) {
@@ -73,7 +88,8 @@ export function useDocuments() {
       setFolders([]);
       setLoadingDocs(false);
     }
-  }, [activeWorkspaceId]);
+    setCurrentFolderId(null);
+  }, [activeWorkspaceId, fetchDocuments, fetchFolders]);
 
   useEffect(() => {
     const hasProcessingDocs = documents.some(doc => doc.status === 'UPLOADED' || doc.status === 'PROCESSING');
@@ -84,23 +100,33 @@ export function useDocuments() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [documents]);
+  }, [documents, fetchDocuments]);
 
   const uploadFiles = async (files: File[]) => {
     if (!files.length || !activeWorkspaceId) return;
 
-    const queue = files.map(f => ({ name: f.name, progress: 0, status: 'pending' as const }));
+    const queue: UploadQueueItem[] = files.map((file) => {
+      const validationError = validateFile(file);
+      return {
+        name: file.name,
+        size: file.size,
+        progress: 0,
+        status: validationError ? "error" : "pending",
+        errorMessage: validationError || undefined,
+      };
+    });
     setUploadQueue(queue);
     setIsUploading(true);
 
     for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (validateFile(file)) continue;
+
       setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'uploading', progress: 20 } : q));
       try {
-        const file = files[i];
-
         // 1. Get Presigned URL
-        const presignRes = await fetch("/api/upload", { 
-          method: "POST", 
+        const presignRes = await fetch("/api/upload", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName: file.name,
@@ -113,7 +139,7 @@ export function useDocuments() {
         });
 
         if (!presignRes.ok) {
-          const errData = await presignRes.json();
+          const errData = await presignRes.json().catch(() => ({}));
           throw new Error(errData.error || "Failed to initialize upload");
         }
 
@@ -155,16 +181,21 @@ export function useDocuments() {
         }
 
         setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'done', progress: 100 } : q));
-      } catch (error: any) {
+      } catch (error) {
         console.error(error);
-        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error', progress: 0 } : q));
-        toast.error(`Failed to upload ${files[i].name}: ${error.message || "Unknown error"}`);
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setUploadQueue(prev => prev.map((q, idx) => idx === i ? {
+          ...q,
+          status: 'error',
+          progress: 0,
+          errorMessage: message,
+        } : q));
+        toast.error(`Failed to upload ${file.name}: ${message}`);
       }
     }
 
     await fetchDocuments(true);
     setIsUploading(false);
-    setTimeout(() => setUploadQueue([]), 3000);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -194,6 +225,8 @@ export function useDocuments() {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const nextTarget = e.relatedTarget as Node | null;
+    if (nextTarget && e.currentTarget.contains(nextTarget)) return;
     setIsDragOver(false);
   };
 
@@ -238,14 +271,22 @@ export function useDocuments() {
       } else {
         throw new Error("Failed to create folder");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to create folder");
     }
   };
 
   const currentFolder = folders.find(f => f.id === currentFolderId);
+  const folderPath: Array<{ id: string; name: string }> = [];
+  let cursor = currentFolder;
+  while (cursor) {
+    folderPath.unshift({ id: cursor.id, name: cursor.name });
+    cursor = folders.find((folder) => folder.id === cursor?.parentId);
+  }
+
   const displayedFolders = folders.filter(f => f.parentId === currentFolderId);
   const displayedDocuments = documents.filter(doc => doc.folderId === currentFolderId || (!doc.folderId && !currentFolderId));
+  const dismissUploadQueue = () => setUploadQueue([]);
 
   return {
     activeWorkspaceId,
@@ -266,9 +307,12 @@ export function useDocuments() {
     setSelectedKb,
     isDragOver,
     uploadQueue,
+    setUploadQueue,
+    dismissUploadQueue,
     displayedFolders,
     displayedDocuments,
     currentFolder,
+    folderPath,
     handleDrop,
     handleDragOver,
     handleDragLeave,

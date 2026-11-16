@@ -62,7 +62,7 @@ function VerifyEmailForm() {
           </div>
           <h1 className="text-3xl font-heading font-bold tracking-tight">Verify Email</h1>
           <p className="text-sm text-muted-foreground">
-            We've sent a 6-digit code to <br/>
+            We&apos;ve sent a 6-digit code to <br/>
             <span className="font-medium text-foreground">{email}</span>
           </p>
         </div>

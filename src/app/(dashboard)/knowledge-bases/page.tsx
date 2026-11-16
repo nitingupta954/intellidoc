@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Database, Loader2, FolderOpen } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  Database,
+  FolderOpen,
+  Plus,
+  SearchX,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -14,159 +22,296 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { useWorkspaceStore } from "@/store/workspace-store";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelative } from "@/lib/format";
 
 type KnowledgeBase = {
   id: string;
   name: string;
   description: string | null;
   createdAt: string;
+  updatedAt?: string;
   _count?: { documents: number };
 };
+
+type SortValue = "updated-desc" | "name-asc" | "documents-desc";
 
 export default function KnowledgeBasesPage() {
   const { activeWorkspaceId } = useWorkspaceStore();
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Create Modal State
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortValue>("updated-desc");
+
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    if (!activeWorkspaceId) return;
-    
+    if (!activeWorkspaceId) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     fetch(`/api/knowledge-bases?workspaceId=${activeWorkspaceId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.knowledgeBases) {
-          setKbs(data.knowledgeBases);
-        }
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.knowledgeBases) setKbs(data.knowledgeBases);
       })
+      .catch(() => toast.error("Could not load collections."))
       .finally(() => setIsLoading(false));
   }, [activeWorkspaceId]);
 
   const handleCreate = async () => {
     if (!name.trim() || !activeWorkspaceId) return;
-    
+
     setIsCreating(true);
     try {
       const res = await fetch("/api/knowledge-bases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, workspaceId: activeWorkspaceId })
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim(),
+          workspaceId: activeWorkspaceId,
+        }),
       });
-      if (res.ok) {
-        const newKb = await res.json();
-        setKbs([newKb, ...kbs]);
-        setIsOpen(false);
-        setName("");
-        setDescription("");
-      }
-    } catch (e) {
-      console.error(e);
+      if (!res.ok) throw new Error("Failed to create collection");
+
+      const newKb = (await res.json()) as KnowledgeBase;
+      setKbs((current) => [
+        { ...newKb, _count: newKb._count ?? { documents: 0 } },
+        ...current,
+      ]);
+      setIsOpen(false);
+      setName("");
+      setDescription("");
+      toast.success("Collection created");
+    } catch {
+      toast.error("Could not create the collection.");
     } finally {
       setIsCreating(false);
     }
   };
 
+  const visibleKbs = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return kbs
+      .filter(
+        (kb) =>
+          !query ||
+          kb.name.toLowerCase().includes(query) ||
+          (kb.description || "").toLowerCase().includes(query)
+      )
+      .sort((a, b) => {
+        if (sort === "name-asc") return a.name.localeCompare(b.name);
+        if (sort === "documents-desc") {
+          return (b._count?.documents || 0) - (a._count?.documents || 0);
+        }
+        return (
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime()
+        );
+      });
+  }, [kbs, search, sort]);
+
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-heading font-bold tracking-tight">Knowledge Bases</h1>
-          <p className="text-muted-foreground mt-1">Organize your documents into focused collections for AI retrieval.</p>
-        </div>
-
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shadow-lg shadow-primary/20">
-              <Plus size={16} /> Create Collection
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] glass">
-            <DialogHeader>
-              <DialogTitle>New Knowledge Base</DialogTitle>
-              <DialogDescription>
-                Group related documents together. You can chat with specific knowledge bases later.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label htmlFor="name" className="text-sm font-medium">Name</label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Q3 Financial Reports"
-                  className="bg-background/50"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="description" className="text-sm font-medium">Description (Optional)</label>
-                <Input
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g. Earnings calls, balance sheets, and projections"
-                  className="bg-background/50"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!name.trim() || isCreating}>
-                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
+    <PageContainer className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <PageHeader
+        title="Knowledge Bases"
+        description="Organize documents into focused collections for grounded AI retrieval."
+        actions={
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" disabled={!activeWorkspaceId}>
+                <Plus className="size-4" /> Create collection
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin mb-4" />
-          <p>Loading your collections...</p>
-        </div>
-      ) : kbs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center glass-panel rounded-3xl border border-border/50 bg-background/30">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4">
-            <Database size={32} />
-          </div>
-          <h2 className="text-2xl font-heading font-semibold">No Knowledge Bases Found</h2>
-          <p className="text-muted-foreground mt-2 max-w-sm mb-6">
-            Create your first knowledge base to start organizing your documents for the AI.
-          </p>
-          <Button onClick={() => setIsOpen(true)} className="gap-2">
-            <Plus size={16} /> Create Now
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {kbs.map((kb) => (
-            <Link href={`/knowledge-bases/${kb.id}`} key={kb.id} className="group flex flex-col p-6 rounded-3xl glass border border-border/50 hover:border-primary/30 transition-all shadow-sm hover:shadow-md hover:shadow-primary/5 cursor-pointer block">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                  <FolderOpen size={20} />
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>New knowledge base</DialogTitle>
+                <DialogDescription>
+                  Group related documents together and chat against just that
+                  collection.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Name
+                  </label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Q3 financial reports"
+                    autoFocus
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="description" className="text-sm font-medium">
+                    Description <span className="text-muted-foreground">(optional)</span>
+                  </label>
+                  <Input
+                    id="description"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="What belongs in this collection?"
+                  />
                 </div>
               </div>
-              <h3 className="font-semibold text-lg font-heading mb-1 truncate group-hover:text-primary transition-colors">{kb.name}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px] mb-4">
-                {kb.description || "No description provided."}
-              </p>
-              
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50 text-xs text-muted-foreground">
-                <span>{kb._count?.documents || 0} Documents</span>
-                <span>{formatDistanceToNow(new Date(kb.createdAt), { addSuffix: true })}</span>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={!name.trim() || isCreating}
+                  loading={isCreating}
+                >
+                  Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      {isLoading ? (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="space-y-4 rounded-xl border border-border bg-card p-5"
+            >
+              <Skeleton className="size-10 rounded-xl" />
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+              <div className="flex justify-between pt-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
               </div>
-            </Link>
+            </div>
           ))}
         </div>
+      ) : !activeWorkspaceId ? (
+        <EmptyState
+          icon={<Building2 aria-hidden="true" />}
+          title="No workspace selected"
+          description="Select or create a workspace before organizing documents into collections."
+          action={
+            <Button asChild>
+              <Link href="/settings/team">Manage workspaces</Link>
+            </Button>
+          }
+        />
+      ) : kbs.length === 0 ? (
+        <EmptyState
+          icon={<Database aria-hidden="true" />}
+          title="No knowledge bases yet"
+          description="Create a collection to group related documents and give the assistant a focused source of truth."
+          action={
+            <Button onClick={() => setIsOpen(true)}>
+              <Plus className="size-4" /> Create your first collection
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <SearchInput
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Search collections"
+              containerClassName="max-w-md"
+              aria-label="Search collections"
+            />
+            <div className="relative w-fit">
+              <ChevronDown
+                className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as SortValue)}
+                aria-label="Sort collections"
+                className="h-9 appearance-none rounded-lg border border-input bg-card pl-3 pr-8 text-sm text-foreground shadow-card outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              >
+                <option value="updated-desc">Recently updated</option>
+                <option value="name-asc">Name A–Z</option>
+                <option value="documents-desc">Most documents</option>
+              </select>
+            </div>
+          </div>
+
+          {visibleKbs.length === 0 ? (
+            <EmptyState
+              icon={<SearchX aria-hidden="true" />}
+              title="No matching collections"
+              description="Try a different search term."
+              action={
+                <Button variant="outline" onClick={() => setSearch("")}>
+                  Clear search
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+              {visibleKbs.map((kb) => (
+                <Link
+                  key={kb.id}
+                  href={`/knowledge-bases/${kb.id}`}
+                  className="group flex min-h-[210px] flex-col rounded-xl border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <FolderOpen className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {kb._count?.documents || 0}{" "}
+                      {kb._count?.documents === 1 ? "document" : "documents"}
+                    </span>
+                  </div>
+                  <h2 className="mt-4 truncate font-heading text-base font-semibold text-foreground group-hover:text-primary">
+                    {kb.name}
+                  </h2>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {kb.description || "No description"}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
+                    <span>
+                      Updated {formatRelative(kb.updatedAt || kb.createdAt)}
+                    </span>
+                    <span className="text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                      Open
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(true)}
+                className="flex min-h-[210px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card/40 p-5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-card hover:text-foreground"
+              >
+                <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                  <Plus className="size-5" aria-hidden="true" />
+                </span>
+                Create collection
+              </button>
+            </div>
+          )}
+        </>
       )}
-    </div>
+    </PageContainer>
   );
 }

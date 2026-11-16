@@ -7,6 +7,7 @@ import { useRazorpayCheckout } from "@/components/payments/RazorpayCheckout";
 import { cn } from "@/lib/utils";
 
 import { PLANS } from "@/config/pricing";
+import { PageContainer } from "@/components/layout/page-container";
 
 export default function PricingPage() {
   const { handlePayment, loading } = useRazorpayCheckout();
@@ -31,7 +32,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="h-full flex flex-col items-center overflow-y-auto pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <PageContainer variant="fullBleed" className="flex flex-col items-center pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-12 pt-4">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-wider mb-6">
@@ -182,6 +183,6 @@ export default function PricingPage() {
         All plans include SSL encryption and secure document storage. Payments are processed
         securely via Razorpay. Cancel anytime from the billing page.
       </p>
-    </div>
+    </PageContainer>
   );
 }

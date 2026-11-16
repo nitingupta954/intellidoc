@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Loader2, Send } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "./VoiceInputButton";
 
@@ -23,43 +25,65 @@ export function ChatInput({
   hasKey,
   onTranscript,
 }: ChatInputProps) {
-  return (
-    <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none bg-gradient-to-t from-background via-background/90 to-transparent pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] z-40">
-      <div className="max-w-4xl mx-auto relative pointer-events-auto px-2">
-        <div className="glass-panel bg-background/70 backdrop-blur-2xl rounded-[32px] border border-white/20 dark:border-white/10 flex items-end p-2 focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all shadow-xl">
-          <textarea 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={hasKey === false ? "Please add an API key first..." : "Ask a question..."}
-            disabled={hasKey === false}
-            className="flex-1 bg-transparent border-none focus:ring-0 resize-none min-h-[44px] max-h-[150px] md:max-h-[200px] py-3 px-4 text-[16px] md:text-sm leading-relaxed placeholder:text-muted-foreground scrollbar-thin outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            rows={1}
-          />
-          
-          {onTranscript && (
-            <VoiceInputButton 
-              onTranscript={onTranscript} 
-              disabled={hasKey === false || isGenerating} 
-            />
-          )}
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-          <Button 
-            onClick={handleSend} 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(textarea.scrollHeight, 160);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 160 ? "auto" : "hidden";
+  }, [input]);
+
+  return (
+    <div className="shrink-0 border-t border-border bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur">
+      <div className="mx-auto w-full max-w-[760px]">
+        <div className="flex items-end gap-1 rounded-xl border border-border bg-card p-1.5 shadow-sm transition-colors focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-ring/30">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              hasKey === false
+                ? "Add an API key to continue…"
+                : "Ask about your documents…"
+            }
+            disabled={hasKey === false}
+            aria-label="Chat message"
+            rows={1}
+            className="min-h-10 max-h-40 flex-1 resize-none scrollbar-thin border-none bg-transparent px-3 py-2.5 text-base leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+          />
+
+          {onTranscript ? (
+            <VoiceInputButton
+              onTranscript={onTranscript}
+              disabled={hasKey === false || isGenerating}
+            />
+          ) : null}
+
+          <Button
+            type="button"
+            onClick={() => void handleSend()}
             disabled={!input.trim() || isGenerating || hasKey === false}
-            size="icon" 
-            className="rounded-full shrink-0 mb-1 mr-1 h-10 w-10 transition-transform hover:scale-105 active:scale-95 bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary shadow-md border border-primary/20"
+            size="icon"
+            aria-label={isGenerating ? "Generating response" : "Send message"}
+            className="mb-0.5 mr-0.5 size-9 shrink-0 rounded-lg"
           >
             {isGenerating ? (
-              <Loader2 size={18} className="animate-spin text-primary-foreground" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Send size={18} className="ml-1 text-primary-foreground" />
+              <Send className="size-4" />
             )}
           </Button>
         </div>
-        <div className="text-center mt-3 text-[10px] md:text-xs text-muted-foreground hidden sm:block font-medium drop-shadow-sm">
-          IntelliDoc AI can make mistakes. Verify important information using the provided citations.
-        </div>
+
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+          IntelliDoc AI can make mistakes. Verify important information using the
+          provided citations.
+        </p>
       </div>
     </div>
   );

@@ -10,11 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Input } from "@/components/ui/input";
 
 interface DocumentDialogsProps {
   documentToDelete: string | null;
   setDocumentToDelete: (id: string | null) => void;
-  confirmDelete: () => void;
+  confirmDelete: () => void | Promise<void>;
   isDeleting: boolean;
   isCreatingFolder: boolean;
   setIsCreatingFolder: (open: boolean) => void;
@@ -36,52 +38,51 @@ export function DocumentDialogs({
 }: DocumentDialogsProps) {
   return (
     <>
-      <AlertDialog 
-        open={!!documentToDelete} 
+      <ConfirmDialog
+        open={!!documentToDelete}
         onOpenChange={(open) => !open && !isDeleting && setDocumentToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your document and remove its data from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={(e) => { e.preventDefault(); confirmDelete(); }} 
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Delete this document?"
+        description="This permanently removes the document, its extracted text, and its indexed chunks. This action cannot be undone."
+        confirmLabel="Delete document"
+        onConfirm={async () => {
+          await confirmDelete();
+        }}
+      />
 
       <AlertDialog open={isCreatingFolder} onOpenChange={setIsCreatingFolder}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create New Folder</AlertDialogTitle>
+            <AlertDialogTitle>Create a new folder</AlertDialogTitle>
             <AlertDialogDescription>
-              Enter a name for the new folder.
+              Enter a name for the folder. Uploaded files can be moved into it.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            <input 
+          <form
+            className="py-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreateFolder(event);
+            }}
+          >
+            <Input
               type="text"
               value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
+              onChange={(event) => setNewFolderName(event.target.value)}
               placeholder="Folder name"
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
               autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder(e)}
             />
-          </div>
+          </form>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCreateFolder}>Create</AlertDialogAction>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                handleCreateFolder(event);
+              }}
+              disabled={!newFolderName.trim()}
+            >
+              Create folder
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

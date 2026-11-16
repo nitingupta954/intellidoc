@@ -1,23 +1,53 @@
 "use client";
 
-import { 
-  BrainCircuit, 
-  Info, 
-  Loader2, 
-  Menu, 
-  Download, 
-  FileText, 
-  FileDown, 
-  Share2 
+import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  ArrowDown,
+  BrainCircuit,
+  ChevronDown,
+  Download,
+  FileDown,
+  FileText,
+  Info,
+  Loader2,
+  Menu,
+  PanelLeft,
+  PanelRight,
+  Share2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ChatSidebar } from "@/components/chat/ChatSidebar";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Suspense } from "react";
-import { useChat } from "@/hooks/use-chat";
-import { ChatMessages } from "@/components/chat/chat-messages";
+
 import { ChatInput } from "@/components/chat/chat-input";
+import { ChatMessages } from "@/components/chat/chat-messages";
+import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import {
+  getCitationSources,
+  SourcesPanel,
+} from "@/components/chat/chat-citations";
+import { PageContainer } from "@/components/layout/page-container";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { IconButton } from "@/components/ui/icon-button";
+import { useChat } from "@/hooks/use-chat";
 import { exportAsMarkdown, exportAsPdf } from "@/lib/export-chat";
+import { formatFileName } from "@/lib/format";
 
 function ChatContent() {
   const {
@@ -30,11 +60,15 @@ function ChatContent() {
     setIsChatSidebarOpen,
     hasKey,
     messagesEndRef,
+    scrollContainerRef,
+    showJumpToLatest,
+    scrollToBottom,
+    handleScroll,
     kbs,
-    selectedKbId,
     setSelectedKbId,
     docDetails,
     isSharing,
+    docId,
     docTitle,
     activeConversation,
     currentKbId,
@@ -44,140 +78,379 @@ function ChatContent() {
     handleShare,
   } = useChat();
 
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [isSourcesDrawerOpen, setIsSourcesDrawerOpen] = useState(false);
+  const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [sourcesMessageId, setSourcesMessageId] = useState<string | null>(null);
+
+  const sourceMessages = useMemo(
+    () =>
+      messages.filter(
+        (message) =>
+          String(message.role || "").toLowerCase() === "assistant" &&
+          getCitationSources(message.citations).length > 0
+      ),
+    [messages]
+  );
+
+  const latestSourceMessageId =
+    sourceMessages[sourceMessages.length - 1]?.id ?? null;
+
+  useEffect(() => {
+    setSourcesMessageId(latestSourceMessageId);
+  }, [latestSourceMessageId]);
+
+  const activeSourceMessage =
+    messages.find((message) => message.id === sourcesMessageId) ??
+    sourceMessages[sourceMessages.length - 1];
+
+  const sourceCount = getCitationSources(activeSourceMessage?.citations).length;
+
+  const currentKb = kbs.find((kb) => kb.id === currentKbId);
+  const scopeLabel = docId
+    ? formatFileName(docTitle || "Current document")
+    : currentKb?.name || "All workspace documents";
+  const isScopeFixed = Boolean(activeConversationId || docId);
+
+  const handleOpenSources = (messageId: string) => {
+    setSourcesMessageId(messageId);
+    if (window.matchMedia("(min-width: 1280px)").matches) {
+      setIsSourcesOpen(true);
+    } else {
+      setIsSourcesDrawerOpen(true);
+    }
+    if (!showJumpToLatest) {
+      requestAnimationFrame(() => scrollToBottom("auto"));
+    }
+  };
+
+  const handleToggleSources = () => {
+    if (window.matchMedia("(min-width: 1280px)").matches) {
+      setIsSourcesOpen((open) => !open);
+    } else {
+      setIsSourcesDrawerOpen(true);
+    }
+    if (!showJumpToLatest) {
+      requestAnimationFrame(() => scrollToBottom("auto"));
+    }
+  };
+
   return (
-    <div className="h-full flex overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 bg-background/50">
-      {isChatSidebarOpen && <ChatSidebar className="hidden lg:flex" />}
-      
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Chat Header */}
-        <header className="absolute top-0 left-0 right-0 z-50 h-16 bg-background/40 backdrop-blur-md border-b border-white/10 dark:border-white/5 flex items-center justify-between px-4 md:px-6 shrink-0 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden mr-2 shrink-0">
-                  <Menu size={20} />
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="h-[80vh] p-0">
-                <ChatSidebar />
-              </DrawerContent>
-            </Drawer>
+    <PageContainer
+      variant="fullBleed"
+      className="flex h-full min-h-0 overflow-hidden rounded-xl border border-border bg-card"
+    >
+      {isChatSidebarOpen ? (
+        <aside className="hidden w-[280px] shrink-0 lg:block 2xl:w-[300px]">
+          <ChatSidebar />
+        </aside>
+      ) : null}
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="hidden lg:flex mr-2 text-muted-foreground hover:bg-muted shrink-0"
-              onClick={() => setIsChatSidebarOpen(!isChatSidebarOpen)}
-            >
-              <Menu size={20} />
-            </Button>
-
-            <div className="p-2 bg-primary/10 rounded-lg text-primary shrink-0 hidden sm:flex">
-              <BrainCircuit size={20} />
-            </div>
-            <div className="min-w-0">
-              <h2 className="font-heading font-semibold text-sm truncate">IntelliDoc Assistant</h2>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block shrink-0"></span>
-                <span className="truncate">Using GPT-4o with RAG</span>
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            {kbs.length > 0 && (
-              <select 
-                className="flex glass bg-background/50 border border-border/50 rounded-full px-2 sm:px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 max-w-[120px] sm:max-w-[200px]"
-                value={currentKbId || ""}
-                onChange={(e) => setSelectedKbId(e.target.value)}
-                disabled={!!activeConversationId}
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-3 sm:px-4">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <IconButton
+                aria-label="Open chat history"
+                tooltip="Chat history"
+                size="icon-sm"
+                className="lg:hidden"
+                onClick={() => setIsHistoryDrawerOpen(true)}
               >
-                <option value="">All Workspace Documents</option>
-                {kbs.map((kb) => (
-                  <option key={kb.id} value={kb.id}>{kb.name}</option>
-                ))}
-              </select>
-            )}
+                <Menu className="size-4" />
+              </IconButton>
 
-            {/* Share and Export */}
-            {activeConversationId && messages.length > 0 && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-muted-foreground" 
-                title="Share Chat"
-                onClick={handleShare}
-                disabled={isSharing}
+              <IconButton
+                aria-label={
+                  isChatSidebarOpen ? "Hide chat history" : "Show chat history"
+                }
+                tooltip={
+                  isChatSidebarOpen ? "Hide chat history" : "Show chat history"
+                }
+                size="icon-sm"
+                className="hidden lg:inline-flex"
+                onClick={() => setIsChatSidebarOpen(!isChatSidebarOpen)}
               >
-                {isSharing ? <Loader2 size={20} className="animate-spin" /> : <Share2 size={20} />}
-              </Button>
-            )}
+                <PanelLeft className="size-4" />
+              </IconButton>
 
-            {/* Export dropdown */}
-            {messages.length > 0 && (
-              <div className="relative group">
-                <Button variant="ghost" size="icon" className="text-muted-foreground" title="Export Chat">
-                  <Download size={20} />
-                </Button>
-                <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border/50 rounded-xl p-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl">
-                  <button
-                    onClick={() => exportAsMarkdown(messages, activeConversation?.title || 'IntelliDoc Chat')}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <FileText size={14} /> Export as Markdown
-                  </button>
-                  <button
-                    onClick={() => exportAsPdf(messages, activeConversation?.title || 'IntelliDoc Chat')}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
-                  >
-                    <FileDown size={14} /> Export as PDF
-                  </button>
+              <span
+                className={`hidden size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ${
+                  isSourcesOpen ? "2xl:flex" : "sm:flex"
+                }`}
+              >
+                <BrainCircuit className="size-4" aria-hidden="true" />
+              </span>
+
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate font-heading text-sm font-semibold">
+                  IntelliDoc Assistant
+                </h1>
+                <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-1.5 shrink-0 rounded-full bg-success" />
+                  {docId ? (
+                    <span
+                      className="inline-flex min-w-0 items-center gap-1"
+                      title={scopeLabel}
+                    >
+                      <FileText className="size-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{scopeLabel}</span>
+                    </span>
+                  ) : kbs.length > 0 ? (
+                    <span className="relative inline-flex min-w-0 items-center">
+                      <select
+                        value={currentKbId}
+                        onChange={(event) => setSelectedKbId(event.target.value)}
+                        disabled={isScopeFixed}
+                        aria-label="Chat scope"
+                        title={
+                          isScopeFixed
+                            ? "Scope is fixed for this conversation"
+                            : "Choose a collection scope"
+                        }
+                        className="h-6 max-w-[220px] appearance-none truncate rounded-full border border-border bg-background py-0 pl-2 pr-6 text-[11px] font-medium text-muted-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-80"
+                      >
+                        <option value="">All workspace documents</option>
+                        {kbs.map((kb) => (
+                          <option key={kb.id} value={kb.id}>
+                            {kb.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        className="pointer-events-none absolute right-1.5 size-3 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  ) : (
+                    <span className="truncate" title={scopeLabel}>
+                      {scopeLabel}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-              <Info size={20} />
-            </Button>
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+              <IconButton
+                aria-label="Toggle sources"
+                tooltip={
+                  sourceCount > 0 ? `Sources (${sourceCount})` : "Sources"
+                }
+                size="icon-sm"
+                disabled={messages.length === 0}
+                onClick={handleToggleSources}
+              >
+                <span className="relative">
+                  <PanelRight className="size-4" />
+                  {sourceCount > 0 ? (
+                    <span className="absolute -right-1.5 -top-1.5 flex size-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-semibold leading-none text-primary-foreground">
+                      {sourceCount > 9 ? "9+" : sourceCount}
+                    </span>
+                  ) : null}
+                </span>
+              </IconButton>
+
+              {activeConversationId && messages.length > 0 ? (
+                <IconButton
+                  aria-label="Share chat"
+                  tooltip="Copy share link"
+                  size="icon-sm"
+                  onClick={handleShare}
+                  disabled={isSharing}
+                >
+                  {isSharing ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Share2 className="size-4" />
+                  )}
+                </IconButton>
+              ) : null}
+
+              {messages.length > 0 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Export chat"
+                      title="Export chat"
+                    >
+                      <Download className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onSelect={() =>
+                        exportAsMarkdown(
+                          messages,
+                          activeConversation?.title || "IntelliDoc Chat"
+                        )
+                      }
+                    >
+                      <FileText className="size-3.5" />
+                      Export as Markdown
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onSelect={() =>
+                        exportAsPdf(
+                          messages,
+                          activeConversation?.title || "IntelliDoc Chat"
+                        )
+                      }
+                    >
+                      <FileDown className="size-3.5" />
+                      Export as PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+
+              <IconButton
+                aria-label="About this chat"
+                tooltip="About this chat"
+                size="icon-sm"
+                onClick={() => setIsInfoOpen(true)}
+              >
+                <Info className="size-4" />
+              </IconButton>
+            </div>
+          </header>
+
+          <div className="relative min-h-0 flex-1">
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin"
+            >
+              <ChatMessages
+                messages={messages}
+                isGenerating={isGenerating}
+                hasKey={hasKey}
+                messagesEndRef={messagesEndRef}
+                docTitle={docTitle}
+                docDetails={docDetails}
+                setInput={setInput}
+                activeConversationId={activeConversationId}
+                onOpenSources={handleOpenSources}
+              />
+            </div>
+
+            {showJumpToLatest && messages.length > 0 ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="pointer-events-auto gap-1.5 rounded-full shadow-md"
+                  onClick={() => scrollToBottom()}
+                >
+                  <ArrowDown className="size-3.5" />
+                  Jump to latest
+                </Button>
+              </div>
+            ) : null}
           </div>
-        </header>
 
-        {/* Chat Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-20 md:pt-24 space-y-6 scrollbar-thin">
-          <ChatMessages
-            messages={messages}
+          <ChatInput
+            input={input}
+            setInput={setInput}
+            handleSend={handleSend}
+            onTranscript={handleTranscript}
+            handleKeyDown={handleKeyDown}
             isGenerating={isGenerating}
             hasKey={hasKey}
-            messagesEndRef={messagesEndRef}
-            docTitle={docTitle}
-            docDetails={docDetails}
-            setInput={setInput}
-            activeConversationId={activeConversationId}
           />
         </div>
 
-        {/* Floating Chat Input Area */}
-        <ChatInput
-          input={input}
-          setInput={setInput}
-          handleSend={handleSend}
-          onTranscript={handleTranscript}
-          handleKeyDown={handleKeyDown}
-          isGenerating={isGenerating}
-          hasKey={hasKey}
-        />
+        {isSourcesOpen ? (
+          <aside className="hidden w-[300px] shrink-0 border-l border-border xl:block 2xl:w-[340px]">
+            <SourcesPanel
+              citations={activeSourceMessage?.citations}
+              onClose={() => setIsSourcesOpen(false)}
+            />
+          </aside>
+        ) : null}
       </div>
-    </div>
+
+      <Drawer
+        open={isHistoryDrawerOpen}
+        onOpenChange={setIsHistoryDrawerOpen}
+        direction="left"
+      >
+        <DrawerContent className="w-[300px] max-w-[85vw] p-0">
+          <DrawerTitle className="sr-only">Chat history</DrawerTitle>
+          <ChatSidebar
+            className="border-r-0"
+            onNavigate={() => setIsHistoryDrawerOpen(false)}
+          />
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={isSourcesDrawerOpen}
+        onOpenChange={setIsSourcesDrawerOpen}
+        direction="right"
+      >
+        <DrawerContent className="w-[90vw] max-w-[380px] p-0">
+          <DrawerTitle className="sr-only">Sources</DrawerTitle>
+          <SourcesPanel
+            citations={activeSourceMessage?.citations}
+            onClose={() => setIsSourcesDrawerOpen(false)}
+            className="border-l-0"
+          />
+        </DrawerContent>
+      </Drawer>
+
+      <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>About this chat</DialogTitle>
+            <DialogDescription>
+              Answers are grounded in passages retrieved from your workspace
+              documents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4 text-sm">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Scope
+              </p>
+              <div className="mt-1.5">
+                <Badge tone="neutral" size="sm" className="max-w-full">
+                  <span className="truncate">{scopeLabel}</span>
+                </Badge>
+              </div>
+            </div>
+            <p className="text-muted-foreground">
+              Citations show the source file, match score, and—when
+              available—the page or section used. Open the Sources panel to read
+              the retrieved excerpts and jump to a document.
+            </p>
+            <p className="text-muted-foreground">
+              IntelliDoc may use web search when document evidence is
+              insufficient. It asks for confirmation before doing so. Verify
+              important information using the cited sources.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
   );
 }
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      }
+    >
       <ChatContent />
     </Suspense>
   );

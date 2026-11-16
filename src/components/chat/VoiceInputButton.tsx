@@ -90,7 +90,7 @@ export function VoiceInputButton({ onTranscript, disabled }: VoiceInputButtonPro
 
         {errorType === 'empty-audio' && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-destructive text-destructive-foreground rounded-md px-2 py-1 text-xs font-medium pointer-events-none whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            Couldn't hear anything
+            Couldn&apos;t hear anything
           </div>
         )}
       </button>

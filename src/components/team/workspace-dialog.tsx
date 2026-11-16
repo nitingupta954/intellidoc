@@ -20,6 +20,7 @@ interface WorkspaceDialogProps {
   setWorkspaceDesc: (desc: string) => void;
   onCreate: () => Promise<void>;
   isCreating: boolean;
+  trigger?: React.ReactNode | null;
 }
 
 export function WorkspaceDialog({
@@ -31,15 +32,20 @@ export function WorkspaceDialog({
   setWorkspaceDesc,
   onCreate,
   isCreating,
+  trigger,
 }: WorkspaceDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus size={16} />
-          Create Workspace
-        </Button>
-      </DialogTrigger>
+      {trigger === null ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="gap-2">
+              <Plus size={16} />
+              Create Workspace
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="glass-panel border-border/50">
         <DialogHeader>
           <DialogTitle>Create a new workspace</DialogTitle>

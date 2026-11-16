@@ -1,24 +1,65 @@
 "use client";
 
-import { 
-  Upload, 
-  Search, 
-  Filter,
-  Loader2,
-  Building2,
-  ChevronLeft
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowUpDown,
+  Building2,
+  ChevronDown,
+  FileSearch,
+  Filter,
+  FolderPlus,
+  Loader2,
+  Upload,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchInput } from "@/components/ui/search-input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { useDocuments } from "@/hooks/use-documents";
+import { useWorkspaceStore } from "@/store/workspace-store";
 import { UploadSection } from "@/components/documents/upload-section";
 import { DocumentTable } from "@/components/documents/document-table";
 import { DocumentCards } from "@/components/documents/document-cards";
 import { DocumentDialogs } from "@/components/documents/document-dialogs";
+import { formatMimeType } from "@/lib/format";
+
+type SortValue =
+  | "date-desc"
+  | "date-asc"
+  | "name-asc"
+  | "name-desc"
+  | "size-desc"
+  | "size-asc";
+
+const SORT_LABELS: Record<SortValue, string> = {
+  "date-desc": "Newest first",
+  "date-asc": "Oldest first",
+  "name-asc": "Name A–Z",
+  "name-desc": "Name Z–A",
+  "size-desc": "Largest first",
+  "size-asc": "Smallest first",
+};
 
 export default function DocumentsPage() {
   const router = useRouter();
+  const { workspaces } = useWorkspaceStore();
   const {
     activeWorkspaceId,
     isUploading,
@@ -38,9 +79,11 @@ export default function DocumentsPage() {
     setSelectedKb,
     isDragOver,
     uploadQueue,
+    dismissUploadQueue,
     displayedFolders,
     displayedDocuments,
     currentFolder,
+    folderPath,
     handleDrop,
     handleDragOver,
     handleDragLeave,
@@ -49,151 +92,376 @@ export default function DocumentsPage() {
     handleCreateFolder,
   } = useDocuments();
 
-  const formatMimeType = (mime: string) => {
-    if (!mime) return "FILE";
-    const lower = mime.toLowerCase();
-    if (lower.includes("wordprocessingml.document")) return "DOCX";
-    if (lower.includes("spreadsheetml.sheet")) return "XLSX";
-    if (lower.includes("presentationml.presentation")) return "PPTX";
-    if (lower.includes("pdf")) return "PDF";
-    if (lower.includes("csv")) return "CSV";
-    if (lower.includes("plain")) return "TXT";
-    if (lower.includes("markdown")) return "MD";
-    if (lower.includes("json")) return "JSON";
-    
-    const parts = mime.split("/");
-    const ext = parts[1]?.toUpperCase() || "FILE";
-    if (ext.length > 10) return ext.substring(0, 10) + "...";
-    return ext;
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sort, setSort] = useState<SortValue>("date-desc");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 200);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setSearch("");
+    setDebouncedSearch("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+  }, [currentFolderId]);
+
+  const workspaceName = workspaces.find(
+    (workspace) => workspace.id === activeWorkspaceId
+  )?.name;
+
+  const availableTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(displayedDocuments.map((doc) => formatMimeType(doc.mimeType)))
+      ).sort(),
+    [displayedDocuments]
+  );
+
+  const filteredFolders = useMemo(() => {
+    const query = debouncedSearch.trim().toLowerCase();
+    return displayedFolders
+      .filter((folder) => !query || folder.name.toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [debouncedSearch, displayedFolders]);
+
+  const filteredDocuments = useMemo(() => {
+    const query = debouncedSearch.trim().toLowerCase();
+
+    return displayedDocuments
+      .filter((doc) => {
+        const name = `${doc.filename || ""} ${doc.title || ""}`.toLowerCase();
+        if (query && !name.includes(query)) return false;
+
+        if (statusFilter !== "all") {
+          const status = String(doc.status || "").toUpperCase();
+          if (statusFilter === "indexed" && !["INDEXED", "READY"].includes(status)) {
+            return false;
+          }
+          if (
+            statusFilter === "processing" &&
+            !["UPLOADED", "PROCESSING", "PENDING", "INGESTING"].includes(status)
+          ) {
+            return false;
+          }
+          if (
+            statusFilter === "error" &&
+            !["ERROR", "FAILED", "CANCELLED", "CANCELED"].includes(status)
+          ) {
+            return false;
+          }
+        }
+
+        if (
+          typeFilter !== "all" &&
+          formatMimeType(doc.mimeType) !== typeFilter
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sort) {
+          case "name-asc":
+            return (a.filename || a.title || "").localeCompare(
+              b.filename || b.title || ""
+            );
+          case "name-desc":
+            return (b.filename || b.title || "").localeCompare(
+              a.filename || a.title || ""
+            );
+          case "size-desc":
+            return (b.fileSize || 0) - (a.fileSize || 0);
+          case "size-asc":
+            return (a.fileSize || 0) - (b.fileSize || 0);
+          case "date-asc":
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+          case "date-desc":
+          default:
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        }
+      });
+  }, [debouncedSearch, displayedDocuments, sort, statusFilter, typeFilter]);
+
+  const activeFilterCount =
+    (statusFilter === "all" ? 0 : 1) + (typeFilter === "all" ? 0 : 1);
+  const hasItems = displayedFolders.length > 0 || displayedDocuments.length > 0;
+  const hasResults = filteredFolders.length > 0 || filteredDocuments.length > 0;
+  const hasFilters = Boolean(debouncedSearch.trim()) || activeFilterCount > 0;
+
+  const clearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setStatusFilter("all");
+    setTypeFilter("all");
   };
 
-  return (
-    <div className="flex flex-col space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 shrink-0">
-        <div>
-          <h1 className="text-3xl font-heading font-bold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground mt-1">Manage and upload your knowledge base files.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setIsCreatingFolder(true)}
-            variant="outline"
-            disabled={!activeWorkspaceId}
-            className="font-medium rounded-full shadow-sm"
-            data-tour="new-folder"
-          >
-            New Folder
-          </Button>
-          <Button 
-            onClick={() => {
-              if (!activeWorkspaceId) {
-                toast.error("Please select a workspace first");
-                return;
-              }
-              fileInputRef.current?.click();
-            }}
-            disabled={isUploading || !activeWorkspaceId}
-            className="font-medium rounded-full px-6 shadow-lg shadow-primary/20"
-          >
-            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            {isUploading ? "Uploading..." : "Upload Files"}
-          </Button>
-        </div>
-      </header>
+  const breadcrumbItems = [
+    { label: "Documents", onClick: () => setCurrentFolderId(null) },
+    ...folderPath.map((folder, index) => ({
+      label: folder.name,
+      onClick:
+        index === folderPath.length - 1
+          ? undefined
+          : () => setCurrentFolderId(folder.id),
+    })),
+  ];
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 shrink-0">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input 
-            type="text" 
-            placeholder="Search documents by name, content, or tag..." 
-            className="w-full pl-9 pr-4 py-2 glass bg-background/50 border border-border/50 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-          />
+  return (
+    <PageContainer
+      className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragOver ? (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-8 backdrop-blur-sm">
+          <div className="flex w-full max-w-xl flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-card p-10 text-center shadow-overlay">
+            <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Upload className="size-6" aria-hidden="true" />
+            </span>
+            <h2 className="text-xl font-semibold">Drop files to upload</h2>
+            <p className="text-sm text-muted-foreground">
+              Files will be added to{" "}
+              <span className="font-medium text-foreground">
+                {selectedKb
+                  ? kbs.find((kb) => kb.id === selectedKb)?.name
+                  : workspaceName || "your workspace"}
+              </span>
+              {currentFolder ? ` in ${currentFolder.name}` : ""}.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
-          {kbs.length > 0 && (
-            <select 
-              className="glass bg-background/50 border border-border/50 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              value={selectedKb}
-              onChange={(e) => setSelectedKb(e.target.value)}
+      ) : null}
+
+      <PageHeader
+        title="Documents"
+        description="Upload, organize, and chat with the files in this workspace."
+        breadcrumbs={
+          currentFolderId ? <Breadcrumbs items={breadcrumbItems} /> : undefined
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => setIsCreatingFolder(true)}
+              variant="outline"
+              disabled={!activeWorkspaceId}
+              data-tour="new-folder"
             >
-              <option value="">Upload to Workspace (No KB)</option>
-              {kbs.map((kb) => (
-                <option key={kb.id} value={kb.id}>{kb.name}</option>
-              ))}
-            </select>
-          )}
-          <Button variant="outline" className="glass rounded-full text-sm font-medium">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-        </div>
-      </div>
+              <FolderPlus className="size-4" />
+              New folder
+            </Button>
+            <Button
+              onClick={() => {
+                if (!activeWorkspaceId) {
+                  toast.error("Please select a workspace first");
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
+              disabled={isUploading || !activeWorkspaceId}
+            >
+              {isUploading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Upload className="size-4" />
+              )}
+              {isUploading ? "Uploading…" : "Upload files"}
+            </Button>
+          </div>
+        }
+      />
 
       <UploadSection
         isUploading={isUploading}
-        isDragOver={isDragOver}
         activeWorkspaceId={activeWorkspaceId}
+        workspaceName={workspaceName}
+        currentFolderName={currentFolder?.name}
+        kbs={kbs}
+        selectedKb={selectedKb}
+        setSelectedKb={setSelectedKb}
         uploadQueue={uploadQueue}
         fileInputRef={fileInputRef}
-        handleDrop={handleDrop}
-        handleDragOver={handleDragOver}
-        handleDragLeave={handleDragLeave}
         handleFileChange={handleFileChange}
+        onDismissQueue={dismissUploadQueue}
       />
 
-      {/* Document List */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <SearchInput
+          value={search}
+          onValueChange={setSearch}
+          placeholder="Search documents and folders"
+          containerClassName="max-w-md"
+          aria-label="Search documents"
+        />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="size-4" />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
+                <DropdownMenuRadioItem value="all">
+                  All statuses
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="indexed">
+                  Indexed
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="processing">
+                  Processing
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="error">
+                  Error
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Type</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={typeFilter}
+                onValueChange={setTypeFilter}
+              >
+                <DropdownMenuRadioItem value="all">
+                  All types
+                </DropdownMenuRadioItem>
+                {availableTypes.map((type) => (
+                  <DropdownMenuRadioItem key={type} value={type}>
+                    {type}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+              {hasFilters ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={clearFilters} className="gap-2">
+                    <X className="size-4" /> Clear filters
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="relative">
+            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortValue)}
+              aria-label="Sort documents"
+              className="h-9 appearance-none rounded-lg border border-input bg-card pl-9 pr-8 text-sm text-foreground shadow-card outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              {Object.entries(SORT_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="pb-6">
         {loadingDocs ? (
-          <div className="glass-panel p-8 text-center text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-            Loading documents...
+          <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <Skeleton className="size-9 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-1/5" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+            ))}
           </div>
         ) : !activeWorkspaceId ? (
-          <div className="glass-panel p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
-            <Building2 className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-xl font-heading font-semibold mb-2">No Workspace Selected</h3>
-            <p className="text-muted-foreground max-w-md mb-6">
-              You need to select or create a workspace before you can upload and manage documents.
-            </p>
-            <Button onClick={() => router.push('/settings/team')} className="rounded-full shadow-lg">
-              Manage Workspaces
-            </Button>
-          </div>
-        ) : displayedDocuments.length === 0 && displayedFolders.length === 0 ? (
-          <div className="glass-panel p-8 text-center text-muted-foreground">
-            {currentFolderId ? "This folder is empty. Upload a file here." : "No documents uploaded yet. Upload a file or create a folder above to get started."}
-          </div>
+          <EmptyState
+            icon={<Building2 aria-hidden="true" />}
+            title="No workspace selected"
+            description="Select or create a workspace before uploading and managing documents."
+            action={
+              <Button onClick={() => router.push("/settings/team")}>
+                Manage workspaces
+              </Button>
+            }
+          />
+        ) : !hasItems ? (
+          <EmptyState
+            icon={<FolderPlus aria-hidden="true" />}
+            title={currentFolderId ? "This folder is empty" : "No documents yet"}
+            description={
+              currentFolderId
+                ? "Upload a file here, or create a subfolder to keep things organized."
+                : "Upload your first document, or create a folder to organize your workspace."
+            }
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!activeWorkspaceId}
+                >
+                  <Upload className="size-4" />
+                  Upload files
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreatingFolder(true)}
+                >
+                  <FolderPlus className="size-4" />
+                  New folder
+                </Button>
+              </div>
+            }
+          />
+        ) : !hasResults ? (
+          <EmptyState
+            icon={<FileSearch aria-hidden="true" />}
+            title="No matching documents"
+            description="Try a different search term or clear the active filters."
+            action={
+              <Button variant="outline" onClick={clearFilters}>
+                Clear search and filters
+              </Button>
+            }
+          />
         ) : (
           <>
-            {/* Breadcrumbs */}
-            {currentFolderId && (
-              <div className="flex items-center gap-2 mb-4 text-sm">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentFolderId(currentFolder?.parentId || null)} className="h-8 px-2">
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Back
-                </Button>
-                <span className="text-muted-foreground">{currentFolder?.name}</span>
-              </div>
-            )}
-            
             <DocumentCards
-              displayedFolders={displayedFolders}
-              displayedDocuments={displayedDocuments}
-              setCurrentFolderId={setCurrentFolderId}
-              setDocumentToDelete={setDocumentToDelete}
-              formatMimeType={formatMimeType}
-              router={router}
+              folders={filteredFolders}
+              documents={filteredDocuments}
+              onOpenFolder={setCurrentFolderId}
+              onDelete={setDocumentToDelete}
             />
-
             <DocumentTable
-              displayedFolders={displayedFolders}
-              displayedDocuments={displayedDocuments}
-              setCurrentFolderId={setCurrentFolderId}
-              setDocumentToDelete={setDocumentToDelete}
-              formatMimeType={formatMimeType}
-              router={router}
+              folders={filteredFolders}
+              documents={filteredDocuments}
+              onOpenFolder={setCurrentFolderId}
+              onDelete={setDocumentToDelete}
             />
           </>
         )}
@@ -210,6 +478,6 @@ export default function DocumentsPage() {
         setNewFolderName={setNewFolderName}
         handleCreateFolder={handleCreateFolder}
       />
-    </div>
+    </PageContainer>
   );
 }

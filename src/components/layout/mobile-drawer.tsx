@@ -19,7 +19,7 @@ export function MobileDrawer({
         {trigger}
       </Drawer.Trigger>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 bg-foreground/50 dark:bg-background/60 z-50 backdrop-blur-sm" />
         <Drawer.Content className="bg-background flex flex-col rounded-t-[20px] h-[fit-content] mt-24 fixed bottom-0 left-0 right-0 z-50 border border-border/50 outline-none pb-[env(safe-area-inset-bottom)]">
           <div className="p-4 bg-background rounded-t-[20px] flex-1">
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-6" />

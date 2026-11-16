@@ -1,13 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Upload, Loader2, MessageSquare, ArrowLeft } from "lucide-react";
+import { FilePlus2, FolderOpen, Loader2, MessageSquare } from "lucide-react";
+
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { useKbDetails } from "@/hooks/use-kb-details";
-import { KbDocumentsTable } from "@/components/knowledge-bases/kb-documents-table";
-import { KbDocumentsCards } from "@/components/knowledge-bases/kb-documents-cards";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
+import {
+  DocumentTable,
+  isDocumentIndexed,
+} from "@/components/documents/document-table";
+import { DocumentCards } from "@/components/documents/document-cards";
 import { AddExistingDialog } from "@/components/knowledge-bases/add-existing-dialog";
-import { Input } from "@/components/ui/input";
+import { useKbDetails } from "@/hooks/use-kb-details";
+import { formatFileSize } from "@/lib/format";
 
 export default function KnowledgeBaseDetailPage() {
   const router = useRouter();
@@ -15,199 +25,125 @@ export default function KnowledgeBaseDetailPage() {
     kb,
     documents,
     loading,
-    isUploading,
-    fileInputRef,
     isAddExistingOpen,
     setIsAddExistingOpen,
     workspaceDocuments,
     selectedDocumentIds,
     isLinking,
-    handleFileChange,
+    documentToDelete,
+    setDocumentToDelete,
+    isDeleting,
     deleteDocument,
     handleLinkDocuments,
     toggleDocumentSelection,
   } = useKbDetails();
 
-  const formatMimeType = (mime: string) => {
-    if (!mime) return "FILE";
-    const lower = mime.toLowerCase();
-    if (lower.includes("wordprocessingml.document")) return "DOCX";
-    if (lower.includes("spreadsheetml.sheet")) return "XLSX";
-    if (lower.includes("presentationml.presentation")) return "PPTX";
-    if (lower.includes("pdf")) return "PDF";
-    if (lower.includes("csv")) return "CSV";
-    if (lower.includes("plain")) return "TXT";
-    if (lower.includes("markdown")) return "MD";
-    if (lower.includes("json")) return "JSON";
-
-    const parts = mime.split("/");
-    const ext = parts[1]?.toUpperCase() || "FILE";
-    if (ext.length > 10) return ext.substring(0, 10) + "...";
-    return ext;
-  };
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-        <p className="text-muted-foreground">Loading Knowledge Base...</p>
-      </div>
+      <PageContainer className="flex h-full flex-col items-center justify-center gap-3">
+        <Loader2 className="size-7 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading collection…</p>
+      </PageContainer>
     );
   }
 
   if (!kb) {
     return (
-      <div className="p-6 md:p-10 max-w-5xl mx-auto text-center h-full flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold font-heading">Knowledge Base not found</h1>
-        <p className="text-muted-foreground mt-2 mb-6">The collection you're looking for doesn't exist or you don't have access.</p>
-        <Button onClick={() => router.push('/knowledge-bases')} className="rounded-full">Go Back</Button>
-      </div>
+      <PageContainer className="flex h-full flex-col items-center justify-center">
+        <EmptyState
+          icon={<FolderOpen aria-hidden="true" />}
+          title="Collection not found"
+          description="This collection does not exist or you do not have access to it."
+          action={
+            <Button asChild>
+              <Link href="/knowledge-bases">Back to knowledge bases</Link>
+            </Button>
+          }
+        />
+      </PageContainer>
     );
   }
 
+  const indexedCount = documents.filter(isDocumentIndexed).length;
+  const storage = documents.reduce((total, doc) => total + (doc.fileSize || 0), 0);
+
   return (
-    <div className="h-full flex flex-col space-y-10">
-      <div className="glass-panel rounded-3xl border border-border/50 p-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-          <div className="flex items-start gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full mt-1"
-              onClick={() => router.push("/knowledge-bases")}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-
-            <div>
-              <h1 className="text-4xl font-heading font-bold">
-                {kb.name}
-              </h1>
-
-              <p className="text-muted-foreground mt-2 max-w-xl">
-                {kb.description || "No description provided."}
-              </p>
-
-              <div className="flex flex-wrap gap-6 mt-6">
-
-                <div>
-                  <p className="text-2xl font-bold">
-                    {documents.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Documents
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-2xl font-bold text-green-500">
-                    {
-                      documents.filter(
-                        d => d.status === "INDEXED"
-                      ).length
-                    }
-                  </p>
-
-                  <p className="text-sm text-muted-foreground">
-                    AI Ready
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-2xl font-bold">
-                    {(
-                      documents.reduce(
-                        (a, b) => a + (b.fileSize || 0),
-                        0
-                      ) /
-                      1024 /
-                      1024
-                    ).toFixed(2)}
-                    MB
-                  </p>
-
-                  <p className="text-sm text-muted-foreground">
-                    Storage
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-
-            <Button
-              onClick={() =>
-                router.push(`/chat?knowledgeBaseId=${kb.id}`)
-              }
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Chat KB
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => setIsAddExistingOpen(true)}
-            >
-              Add Existing
-            </Button>
-
-          </div>
-
-        </div>
-      </div>
-     
-
-      {/* <div 
-        onClick={() => fileInputRef.current?.click()}
-        className="glass border-dashed border-2 border-border/50 rounded-2xl p-10 flex flex-col items-center justify-center text-center shrink-0 hover:bg-background/40 transition-colors cursor-pointer group"
-      >
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          onChange={handleFileChange} 
-          accept=".pdf,.docx,.txt,.md,.csv" 
-        />
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-          {isUploading ? <Loader2 size={28} className="animate-spin" /> : <Upload size={28} />}
-        </div>
-        <h3 className="text-lg font-heading font-semibold">
-          {isUploading ? "Uploading..." : `Upload to ${kb.name}`}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-          Support for PDF, DOCX, PPTX, TXT, MD, CSV, JSON. Maximum file size 50MB.
-        </p>
-      </div> */}
-
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin pb-6">
-         
-
-        {documents.length === 0 ? (
-          <div className="glass-panel p-8 text-center text-muted-foreground border border-border/50 rounded-2xl">
-            No documents uploaded to this knowledge base yet. Upload a file in document section and click on add existing button to add documents to this knowledge base.
-          </div>
-        ) : (
+    <PageContainer className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <PageHeader
+        title={kb.name}
+        description={kb.description || "No description"}
+        breadcrumbs={
+          <Breadcrumbs
+            items={[
+              { label: "Knowledge Bases", href: "/knowledge-bases" },
+              { label: kb.name },
+            ]}
+          />
+        }
+        actions={
           <>
-            <KbDocumentsCards
-              documents={documents}
-              deleteDocument={deleteDocument}
-              formatMimeType={formatMimeType}
-              router={router}
-            />
-
-            <KbDocumentsTable
-              documents={documents}
-              deleteDocument={deleteDocument}
-              formatMimeType={formatMimeType}
-              router={router}
-            />
+            <Button variant="outline" onClick={() => setIsAddExistingOpen(true)}>
+              <FilePlus2 className="size-4" />
+              Add existing
+            </Button>
+            <Button
+              onClick={() => router.push(`/chat?knowledgeBaseId=${kb.id}`)}
+            >
+              <MessageSquare className="size-4" />
+              Chat with collection
+            </Button>
           </>
-        )}
-      </div>
+        }
+      />
+
+      <dl className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border bg-card shadow-card">
+        <div className="p-4">
+          <dt className="text-xs text-muted-foreground">Documents</dt>
+          <dd className="mt-1 text-xl font-semibold text-foreground">
+            {documents.length}
+          </dd>
+        </div>
+        <div className="p-4">
+          <dt className="text-xs text-muted-foreground">AI ready</dt>
+          <dd className="mt-1 text-xl font-semibold text-success">{indexedCount}</dd>
+        </div>
+        <div className="p-4">
+          <dt className="text-xs text-muted-foreground">Storage</dt>
+          <dd className="mt-1 text-xl font-semibold text-foreground">
+            {formatFileSize(storage)}
+          </dd>
+        </div>
+      </dl>
+
+      {documents.length === 0 ? (
+        <EmptyState
+          icon={<FolderOpen aria-hidden="true" />}
+          title="No documents in this collection"
+          description="Upload documents in the Documents page, then add them here to chat against this collection."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button onClick={() => setIsAddExistingOpen(true)}>
+                <FilePlus2 className="size-4" />
+                Add existing documents
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/documents">Go to documents</Link>
+              </Button>
+            </div>
+          }
+        />
+      ) : (
+        <>
+          <DocumentCards
+            documents={documents}
+            onDelete={setDocumentToDelete}
+          />
+          <DocumentTable
+            documents={documents}
+            onDelete={setDocumentToDelete}
+          />
+        </>
+      )}
 
       <AddExistingDialog
         isAddExistingOpen={isAddExistingOpen}
@@ -218,6 +154,17 @@ export default function KnowledgeBaseDetailPage() {
         handleLinkDocuments={handleLinkDocuments}
         isLinking={isLinking}
       />
-    </div>
+
+      <ConfirmDialog
+        open={!!documentToDelete}
+        onOpenChange={(open) => !open && !isDeleting && setDocumentToDelete(null)}
+        title="Delete this document?"
+        description="This permanently removes the document from the workspace and from this collection. This action cannot be undone."
+        confirmLabel="Delete document"
+        onConfirm={async () => {
+          if (documentToDelete) await deleteDocument(documentToDelete);
+        }}
+      />
+    </PageContainer>
   );
 }

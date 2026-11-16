@@ -23,8 +23,10 @@ export function useKbDetails() {
   const [workspaceDocuments, setWorkspaceDocuments] = useState<any[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [isLinking, setIsLinking] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchDocuments = async (silent = false) => {
+  const fetchDocuments = async () => {
     if (!activeWorkspaceId || !id) return;
     try {
       const res = await fetch(`/api/documents?workspaceId=${activeWorkspaceId}&knowledgeBaseId=${id}`);
@@ -68,7 +70,7 @@ export function useKbDetails() {
     if (!hasProcessingDocs) return;
 
     const interval = setInterval(() => {
-      fetchDocuments(true);
+      fetchDocuments();
     }, 3000);
 
     return () => clearInterval(interval);
@@ -92,7 +94,7 @@ export function useKbDetails() {
       });
 
       if (!res.ok) throw new Error("Upload failed");
-      await fetchDocuments(true);
+      await fetchDocuments();
     } catch (error) {
       console.error("Upload failed", error);
       toast.error("Failed to upload document.");
@@ -103,15 +105,18 @@ export function useKbDetails() {
   };
 
   const deleteDocument = async (docId: string) => {
-    if (!confirm("Are you sure you want to delete this document?")) return;
+    setIsDeleting(true);
     try {
       const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setDocuments(docs => docs.filter(doc => doc.id !== docId));
-        toast.success("Document deleted");
-      }
+      if (!res.ok) throw new Error("Failed to delete document");
+      setDocuments(docs => docs.filter(doc => doc.id !== docId));
+      toast.success("Document deleted");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to delete document");
+    } finally {
+      setIsDeleting(false);
+      setDocumentToDelete(null);
     }
   };
 
@@ -153,7 +158,7 @@ export function useKbDetails() {
       toast.success(`${selectedDocumentIds.length} document(s) added to knowledge base`);
       setIsAddExistingOpen(false);
       fetchDocuments();
-    } catch (error) {
+    } catch {
       toast.error("Failed to add documents");
     } finally {
       setIsLinking(false);
@@ -179,6 +184,9 @@ export function useKbDetails() {
     selectedDocumentIds,
     isLinking,
     handleFileChange,
+    documentToDelete,
+    setDocumentToDelete,
+    isDeleting,
     deleteDocument,
     handleLinkDocuments,
     toggleDocumentSelection,

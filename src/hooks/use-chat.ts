@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useConversationStore } from "@/store/conversation-store";
@@ -21,6 +21,9 @@ export function useChat() {
   const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(true);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const searchParams = useSearchParams();
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,9 +35,12 @@ export function useChat() {
   
   const docId = searchParams?.get("documentId") || undefined;
   const docTitle = searchParams?.get("documentTitle") || undefined;
-  
+  const knowledgeBaseIdParam = searchParams?.get("knowledgeBaseId") || undefined;
+
   const activeConversation = conversations.find(c => c.id === activeConversationId);
-  const currentKbId = activeConversation?.knowledgeBaseId || selectedKbId;
+  const currentKbId = activeConversationId
+    ? activeConversation?.knowledgeBaseId || ""
+    : selectedKbId;
 
   useEffect(() => {
     if (activeWorkspaceId) {
@@ -56,10 +62,41 @@ export function useChat() {
       .catch(() => setHasKey(false));
   }, []);
 
-  // Auto-scroll to bottom
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+    setIsNearBottom(true);
+    setShowJumpToLatest(false);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const nearBottom = distanceFromBottom < 120;
+    setIsNearBottom(nearBottom);
+    setShowJumpToLatest(!nearBottom);
+  }, []);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isGenerating]);
+    if (!isNearBottom) return;
+    const frame = requestAnimationFrame(() => {
+      scrollToBottom(isGenerating ? "auto" : "smooth");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, isGenerating, isNearBottom, scrollToBottom]);
+
+  useEffect(() => {
+    setIsNearBottom(true);
+    setShowJumpToLatest(false);
+    const frame = requestAnimationFrame(() => {
+      const container = scrollContainerRef.current;
+      if (container) container.scrollTop = container.scrollHeight;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeConversationId, docId]);
 
   // When navigating to a specific document, clear the active conversation
   useEffect(() => {
@@ -76,10 +113,18 @@ export function useChat() {
     }
   }, [docId, setActiveConversation]);
 
+  useEffect(() => {
+    if (!knowledgeBaseIdParam) return;
+    setSelectedKbId(knowledgeBaseIdParam);
+    setActiveConversation(null);
+  }, [knowledgeBaseIdParam, setActiveConversation]);
+
   const handleSend = async () => {
     if (!input.trim() || isGenerating || !activeWorkspaceId) return;
     const userMsg = input;
     setInput("");
+    setIsNearBottom(true);
+    setShowJumpToLatest(false);
     await sendMessage(userMsg, activeWorkspaceId, currentKbId || undefined, docId);
   };
 
@@ -134,6 +179,11 @@ export function useChat() {
     setIsChatSidebarOpen,
     hasKey,
     messagesEndRef,
+    scrollContainerRef,
+    isNearBottom,
+    showJumpToLatest,
+    scrollToBottom,
+    handleScroll,
     kbs,
     selectedKbId,
     setSelectedKbId,
@@ -143,6 +193,7 @@ export function useChat() {
     docTitle,
     activeConversation,
     currentKbId,
+    knowledgeBaseIdParam,
     handleSend,
     handleTranscript,
     handleKeyDown,

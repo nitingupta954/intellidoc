@@ -3,11 +3,11 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-heading" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 import { env } from "@/env";
 import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toast";
 import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
@@ -50,16 +50,10 @@ export default function RootLayout({
             }}
           />
           <AuthProvider>
-            {/* Animated Gradient Background */}
-            <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse duration-10000" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse duration-10000 delay-1000" />
-          </div>
-
           <div className="relative z-0 flex flex-col min-h-screen">
             {children}
           </div>
-          <Toaster position="top-right" richColors />
+          <Toaster />
         </AuthProvider>
         </ThemeProvider>
       </body>

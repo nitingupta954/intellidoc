@@ -3,15 +3,22 @@
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { MessageSquare, BrainCircuit, Info, User, Loader2 } from "lucide-react";
+import { BrainCircuit, FileText, Loader2, MessageSquare } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { SuggestionButton } from "./suggestion-button";
-import { WebSearchConfirmCard } from "./WebSearchConfirmCard";
-import { SynthesisBadge } from "./SynthesisBadge";
+import { CitationSourceGrid } from "./chat-citations";
 import { CreditExhaustedModal } from "./CreditExhaustedModal";
+import { SuggestionButton } from "./suggestion-button";
+import { SynthesisBadge } from "./SynthesisBadge";
+import { WebSearchConfirmCard } from "./WebSearchConfirmCard";
+import { formatFileName } from "@/lib/format";
 import { useConversationStore } from "@/store/conversation-store";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+
+function normalizeRole(role: unknown): string {
+  return String(role || "").toLowerCase();
+}
 
 interface ChatMessagesProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +31,7 @@ interface ChatMessagesProps {
   docDetails: any;
   setInput: (t: string) => void;
   activeConversationId?: string | null;
+  onOpenSources: (messageId: string) => void;
 }
 
 export function ChatMessages({
@@ -35,8 +43,9 @@ export function ChatMessages({
   docDetails,
   setInput,
   activeConversationId,
+  onOpenSources,
 }: ChatMessagesProps) {
-  const resolveWebSearch = useConversationStore(state => state.resolveWebSearch);
+  const resolveWebSearch = useConversationStore((state) => state.resolveWebSearch);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,10 +56,12 @@ export function ChatMessages({
 
   if (hasKey === false) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center space-y-6 max-w-md mx-auto mt-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <h2 className="text-xl font-heading font-semibold">Redirecting to Billing...</h2>
-        <p className="text-muted-foreground text-sm">
+      <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center space-y-4 px-4 text-center">
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <h2 className="font-heading text-lg font-semibold">
+          Redirecting to Billing…
+        </h2>
+        <p className="text-sm text-muted-foreground">
           You need AI credits or an API key to continue.
         </p>
       </div>
@@ -58,84 +69,108 @@ export function ChatMessages({
   }
 
   if (messages.length === 0) {
+    const suggestedQuestions: string[] = Array.isArray(
+      docDetails?.suggestedQuestions
+    )
+      ? docDetails.suggestedQuestions
+      : [];
+
     return (
-      <div className="flex flex-col items-center py-10 md:py-20 text-center space-y-6 max-w-md mx-auto min-h-full">
-        <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4 shrink-0">
-          <MessageSquare size={32} />
-        </div>
-        <h2 className="text-2xl font-heading font-semibold">
-          {docTitle ? `Chat with ${docTitle}` : "How can I help you today?"}
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          {docTitle 
-            ? docDetails?.summary || "Ask me anything about this document. I'll search through it and provide cited answers."
-            : "Select a document from the dropdown above, or ask a general question. If you haven't uploaded any PDFs yet, head over to the Documents section."}
-        </p>
-        
-        {!docTitle && (
-          <div className="flex gap-4 mt-2">
-            <Link href="/documents">
-              <Button variant="outline" className="text-sm">Upload a PDF Document</Button>
-            </Link>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 w-full gap-3 mt-8">
-          {docDetails?.suggestedQuestions && docDetails.suggestedQuestions.length > 0 ? (
-            docDetails.suggestedQuestions.map((q: string, i: number) => (
-              <SuggestionButton key={i} text={q} onClick={(t) => setInput(t)} />
-            ))
+      <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center px-4 py-12 text-center">
+        <span className="mb-4 flex size-12 items-center justify-center rounded-2xl border border-border bg-card text-primary shadow-sm">
+          {docTitle ? (
+            <FileText className="size-5" aria-hidden="true" />
           ) : (
-            <>
-              <SuggestionButton text="Summarize the key points" onClick={(t) => setInput(t)} />
-              <SuggestionButton text="What are the main takeaways?" onClick={(t) => setInput(t)} />
-              <SuggestionButton text="Extract important entities and dates" onClick={(t) => setInput(t)} />
-            </>
+            <MessageSquare className="size-5" aria-hidden="true" />
           )}
-        </div>
+        </span>
+        <h2 className="font-heading text-2xl font-semibold tracking-tight">
+          {docTitle
+            ? `Chat with ${formatFileName(docTitle)}`
+            : "How can I help you today?"}
+        </h2>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+          {docTitle
+            ? docDetails?.summary ||
+              "Ask a question about this document. Answers include citations from the retrieved passages."
+            : "Ask about your documents or choose a collection scope. Answers are grounded in your workspace content."}
+        </p>
+
+        {!docTitle ? (
+          <Button asChild variant="outline" size="sm" className="mt-5">
+            <Link href="/documents">Browse documents</Link>
+          </Button>
+        ) : null}
+
+        {suggestedQuestions.length > 0 ? (
+          <div className="mt-7 w-full">
+            <p className="mb-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Suggested questions
+            </p>
+            <div className="grid w-full gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <SuggestionButton
+                  key={`${question}-${index}`}
+                  text={question}
+                  onClick={(text) => setInput(text)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-32">
+    <div className="mx-auto w-full max-w-[760px] space-y-6 px-4 py-6">
       {messages.map((msg, idx) => (
-        <div key={msg.id} className={`flex gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-          {msg.role === 'assistant' && (
-            <div className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center shrink-0 mt-1 border border-primary/20 shadow-sm relative overflow-hidden">
-              <BrainCircuit size={16} className="text-primary" />
-            </div>
-          )}
-          <div className={`max-w-[85%] sm:max-w-[75%] p-4 shadow-sm transition-all ${
-            msg.role === 'user' 
-              ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground ml-auto rounded-3xl rounded-tr-sm' 
-              : 'glass-panel bg-background/60 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl rounded-tl-sm'
-          }`}>
-            {msg.role === 'assistant' ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-muted/80 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl prose-a:text-primary prose-strong:text-foreground text-sm leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+        <div
+          key={msg.id}
+          className={
+            normalizeRole(msg.role) === "user"
+              ? "flex justify-end"
+              : "flex items-start gap-3"
+          }
+        >
+          {normalizeRole(msg.role) === "assistant" ? (
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary">
+              <BrainCircuit className="size-3.5" aria-hidden="true" />
+            </span>
+          ) : null}
+
+          <div
+            className={
+              normalizeRole(msg.role) === "user"
+                ? "max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground"
+                : "min-w-0 flex-1"
+            }
+          >
+            {normalizeRole(msg.role) === "assistant" ? (
+              <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-pre:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-xs prose-pre:rounded-lg prose-pre:border prose-pre:border-border prose-pre:bg-muted/60 prose-a:text-primary prose-strong:text-foreground">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+                {msg.isStreaming && isGenerating && idx === messages.length - 1 ? (
+                  <span
+                    className="ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full bg-primary align-text-bottom"
+                    aria-hidden="true"
+                  />
+                ) : null}
               </div>
             ) : (
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
-            )}
-            
-            {msg.citations && msg.citations.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <p className="text-xs font-semibold mb-2 flex items-center gap-1 opacity-70">
-                  <Info size={12} /> Sources:
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                  {msg.citations.map((cit: any, i: number) => (
-                    <div key={i} className="px-3 py-1.5 rounded-lg bg-background/50 border border-border text-[10px] shrink-0 max-w-[200px]">
-                      <span className="font-bold block truncate text-primary">Doc • {(cit.score * 100).toFixed(1)}% match</span>
-                      <span className="truncate block opacity-70">{cit.text_snippet}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <div className="whitespace-pre-wrap">{msg.content}</div>
             )}
 
-            {msg.needsConfirmation && (
+            {msg.citations && msg.citations.length > 0 ? (
+              <CitationSourceGrid
+                citations={msg.citations}
+                messageId={msg.id}
+                onOpenSources={onOpenSources}
+              />
+            ) : null}
+
+            {msg.needsConfirmation ? (
               <WebSearchConfirmCard
                 pendingId={msg.needsConfirmation.pendingId}
                 verdict={msg.needsConfirmation.verdict}
@@ -149,25 +184,12 @@ export function ChatMessages({
                 }}
                 resolved={msg.confirmationResolved}
               />
-            )}
+            ) : null}
 
-            {msg.isSynthesized && !msg.needsConfirmation && (
+            {msg.isSynthesized && !msg.needsConfirmation ? (
               <SynthesisBadge />
-            )}
-
-            {msg.isStreaming && isGenerating && idx === messages.length - 1 && (
-              <span className="inline-flex items-center gap-1 mt-2 text-primary opacity-70">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </span>
-            )}
+            ) : null}
           </div>
-          {msg.role === 'user' && (
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
-              <User size={16} className="text-muted-foreground" />
-            </div>
-          )}
         </div>
       ))}
       <div ref={messagesEndRef} />
