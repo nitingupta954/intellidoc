@@ -49,6 +49,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-accent: var(--primary-accent);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -82,11 +83,12 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
   --primary: #172554;
+  --primary-accent: #172554;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted-foreground: #626f86;
   --accent: #eef2ff;
   --accent-foreground: #172554;
   --destructive: #dc2626;
@@ -144,7 +146,8 @@
   --card-foreground: #e2e8f0;
   --popover: #111833;
   --popover-foreground: #e2e8f0;
-  --primary: #6366f1;
+  --primary: #5f62ee;
+  --primary-accent: #818cf8;
   --primary-foreground: #ffffff;
   --secondary: #1a2340;
   --secondary-foreground: #e2e8f0;
@@ -228,5 +231,20 @@
 
   .glass-panel:hover {
     border-color: color-mix(in oklab, var(--border), var(--foreground) 12%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

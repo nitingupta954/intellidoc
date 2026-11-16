@@ -43,6 +43,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-dvh w-full overflow-hidden bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to content
+      </a>
       <MainSidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed((value) => !value)}
@@ -79,9 +85,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-8 scrollbar-thin sm:p-6 md:p-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-8 scrollbar-thin sm:p-6 md:p-8"
+        >
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -167,7 +167,7 @@ export function CitationSourceGrid({
             onClick={() => onOpenSources(messageId)}
             className="flex min-w-0 items-start gap-2 rounded-lg border border-border bg-card/60 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[10px] font-semibold text-primary">
+            <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[10px] font-semibold text-primary-accent">
               {index + 1}
             </span>
             <span className="min-w-0 flex-1">
@@ -255,7 +255,7 @@ export function SourcesPanel({
               <li key={`${source.id}-${index}`}>
                 <article className="rounded-lg border border-border bg-background/60 p-3">
                   <div className="flex items-start gap-2">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[10px] font-semibold text-primary">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[10px] font-semibold text-primary-accent">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">

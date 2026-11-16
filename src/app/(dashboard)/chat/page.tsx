@@ -176,7 +176,7 @@ function ChatContent() {
               </IconButton>
 
               <span
-                className={`hidden size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ${
+                className={`hidden size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-accent ${
                   isSourcesOpen ? "2xl:flex" : "sm:flex"
                 }`}
               >
@@ -447,7 +447,7 @@ export default function ChatPage() {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="size-6 animate-spin text-primary-accent" />
         </div>
       }
     >

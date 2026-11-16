@@ -61,12 +61,12 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
             }}
             className="gap-2 py-2"
           >
-            <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary-accent">
               <Building2 className="size-3.5" />
             </span>
             <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
             {activeWorkspaceId === workspace.id ? (
-              <Check className="size-4 shrink-0 text-primary" />
+              <Check className="size-4 shrink-0 text-primary-accent" />
             ) : null}
           </DropdownMenuItem>
         ))
@@ -77,7 +77,7 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
           setOpen(false);
           create.setIsCreateOpen(true);
         }}
-        className="gap-2 py-2 text-primary focus:text-primary"
+        className="gap-2 py-2 text-primary-accent focus:text-primary-accent"
       >
         <Plus className="size-4" />
         Create workspace
@@ -87,7 +87,7 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
 
   const triggerContent = (
     <>
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-accent">
         <Building2 className="size-3.5" />
       </span>
       {!collapsed ? (

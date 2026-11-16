@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center space-y-2">
           <div className="flex justify-center pb-4">
             <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
-              <BrainCircuit className="h-6 w-6 text-primary" />
+              <BrainCircuit className="h-6 w-6 text-primary-accent" />
             </div>
           </div>
           <h1 className="text-3xl font-heading font-bold tracking-tight">Forgot Password</h1>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center mt-6">
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary-accent transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to login

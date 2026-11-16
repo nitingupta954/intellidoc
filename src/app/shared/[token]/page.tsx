@@ -59,7 +59,7 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
       <div className="w-full max-w-4xl glass-panel border border-border/50 rounded-2xl p-6 mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
-            {sharedLink.resourceType === 'DOCUMENT' ? <FileText className="text-primary" /> : <MessageSquare className="text-primary" />}
+            {sharedLink.resourceType === 'DOCUMENT' ? <FileText className="text-primary-accent" /> : <MessageSquare className="text-primary-accent" />}
             {(resource as any).title || (resource as any).filename || "Shared Resource"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Shared by {sharedLink.user?.name || "Anonymous"}</p>

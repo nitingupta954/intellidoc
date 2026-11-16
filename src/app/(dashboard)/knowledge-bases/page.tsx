@@ -273,7 +273,7 @@ export default function KnowledgeBasesPage() {
                   className="group flex min-h-[210px] flex-col rounded-xl border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/40"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary-accent">
                       <FolderOpen className="size-5" aria-hidden="true" />
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -281,7 +281,7 @@ export default function KnowledgeBasesPage() {
                       {kb._count?.documents === 1 ? "document" : "documents"}
                     </span>
                   </div>
-                  <h2 className="mt-4 truncate font-heading text-base font-semibold text-foreground group-hover:text-primary">
+                  <h2 className="mt-4 truncate font-heading text-base font-semibold text-foreground group-hover:text-primary-accent">
                     {kb.name}
                   </h2>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
@@ -291,7 +291,7 @@ export default function KnowledgeBasesPage() {
                     <span>
                       Updated {formatRelative(kb.updatedAt || kb.createdAt)}
                     </span>
-                    <span className="text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-primary-accent opacity-0 transition-opacity group-hover:opacity-100">
                       Open
                     </span>
                   </div>

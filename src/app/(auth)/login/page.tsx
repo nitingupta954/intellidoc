@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           <div className="flex justify-center pb-4">
             <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
-              <BrainCircuit className="h-6 w-6 text-primary" />
+              <BrainCircuit className="h-6 w-6 text-primary-accent" />
             </div>
           </div>
           <h1 className="text-3xl font-heading font-bold tracking-tight">Welcome back</h1>
@@ -111,7 +111,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium" htmlFor="password">Password</label>
-              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary-accent transition-colors cursor-pointer">
                 Forgot password?
               </Link>
             </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary hover:underline font-medium cursor-pointer">
+          <Link href="/register" className="text-primary-accent hover:underline font-medium cursor-pointer">
             Sign up
           </Link>
         </p>

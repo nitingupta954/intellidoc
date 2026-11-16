@@ -57,7 +57,7 @@ export function ChatMessages({
   if (hasKey === false) {
     return (
       <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center space-y-4 px-4 text-center">
-        <Loader2 className="size-6 animate-spin text-primary" />
+        <Loader2 className="size-6 animate-spin text-primary-accent" />
         <h2 className="font-heading text-lg font-semibold">
           Redirecting to Billing…
         </h2>
@@ -77,7 +77,7 @@ export function ChatMessages({
 
     return (
       <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center px-4 py-12 text-center">
-        <span className="mb-4 flex size-12 items-center justify-center rounded-2xl border border-border bg-card text-primary shadow-sm">
+        <span className="mb-4 flex size-12 items-center justify-center rounded-2xl border border-border bg-card text-primary-accent shadow-sm">
           {docTitle ? (
             <FileText className="size-5" aria-hidden="true" />
           ) : (
@@ -134,7 +134,7 @@ export function ChatMessages({
           }
         >
           {normalizeRole(msg.role) === "assistant" ? (
-            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary-accent">
               <BrainCircuit className="size-3.5" aria-hidden="true" />
             </span>
           ) : null}
@@ -147,7 +147,7 @@ export function ChatMessages({
             }
           >
             {normalizeRole(msg.role) === "assistant" ? (
-              <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-pre:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-xs prose-pre:rounded-lg prose-pre:border prose-pre:border-border prose-pre:bg-muted/60 prose-a:text-primary prose-strong:text-foreground">
+              <div className="prose prose-sm max-w-none text-sm leading-relaxed dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-pre:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-xs prose-pre:rounded-lg prose-pre:border prose-pre:border-border prose-pre:bg-muted/60 prose-a:text-primary-accent prose-strong:text-foreground">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {msg.content}
                 </ReactMarkdown>

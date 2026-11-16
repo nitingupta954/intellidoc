@@ -59,7 +59,7 @@ export function DocumentCards({
             className="rounded-xl border border-border bg-card p-4 shadow-card"
           >
             <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-accent">
                 <FileText className="size-4" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
@@ -84,7 +84,7 @@ export function DocumentCards({
 
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
               <div className="flex min-w-0 items-center gap-2">
-                <Avatar name={doc.user?.name || doc.user?.email} size="sm" />
+                <Avatar name={doc.user?.name || doc.user?.email} size="sm" aria-hidden="true" />
                 <span className="truncate text-xs text-muted-foreground">
                   {doc.user?.name || doc.user?.email || "Unknown"}
                 </span>

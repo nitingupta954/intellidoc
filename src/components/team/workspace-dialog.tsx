@@ -1,15 +1,19 @@
 "use client";
 
+import { Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface WorkspaceDialogProps {
   isOpen: boolean;
@@ -39,45 +43,68 @@ export function WorkspaceDialog({
       {trigger === null ? null : (
         <DialogTrigger asChild>
           {trigger ?? (
-            <Button className="gap-2">
-              <Plus size={16} />
-              Create Workspace
+            <Button>
+              <Plus className="size-4" aria-hidden="true" />
+              Create workspace
             </Button>
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="glass-panel border-border/50">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a new workspace</DialogTitle>
+          <DialogTitle>Create a workspace</DialogTitle>
+          <DialogDescription>
+            Workspaces keep documents, collections, and conversations isolated.
+            You will be the owner of this workspace.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onCreate();
+          }}
+        >
           <div className="space-y-2">
-            <label className="text-sm font-medium">Workspace Name</label>
-            <Input 
-              placeholder="e.g., Engineering Team" 
+            <label htmlFor="workspace-name" className="text-sm font-medium">
+              Workspace name
+            </label>
+            <Input
+              id="workspace-name"
+              autoFocus
+              required
+              maxLength={80}
+              placeholder="e.g. Engineering team"
               value={workspaceName}
-              onChange={(e) => setWorkspaceName(e.target.value)}
-              className="bg-background/50"
+              onChange={(event) => setWorkspaceName(event.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Description (Optional)</label>
-            <Input 
-              placeholder="What is this workspace for?" 
+            <label
+              htmlFor="workspace-description"
+              className="text-sm font-medium"
+            >
+              Description <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <Textarea
+              id="workspace-description"
+              rows={3}
+              maxLength={300}
+              placeholder="What will this workspace be used for?"
               value={workspaceDesc}
-              onChange={(e) => setWorkspaceDesc(e.target.value)}
-              className="bg-background/50"
+              onChange={(event) => setWorkspaceDesc(event.target.value)}
             />
           </div>
-          <Button onClick={onCreate} className="w-full" disabled={isCreating}>
-            {isCreating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : "Create Workspace"}
-          </Button>
-        </div>
+          <DialogFooter className="-mx-0 -mb-0 mt-2 rounded-none border-0 bg-transparent p-0">
+            <Button
+              type="submit"
+              loading={isCreating}
+              disabled={!workspaceName.trim()}
+            >
+              Create workspace
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

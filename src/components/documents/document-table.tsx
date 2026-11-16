@@ -191,7 +191,7 @@ export function DocumentTable({
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-info-soft text-info">
                     <FolderIcon className="size-4" aria-hidden="true" />
                   </span>
-                  <span className="truncate font-medium text-foreground group-hover:text-primary">
+                  <span className="truncate font-medium text-foreground group-hover:text-primary-accent">
                     {folder.name}
                   </span>
                 </div>
@@ -219,7 +219,7 @@ export function DocumentTable({
               >
                 <td className="px-4 py-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-accent">
                       <FileText className="size-4" aria-hidden="true" />
                     </span>
                     <Tooltip>
@@ -248,7 +248,7 @@ export function DocumentTable({
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <Avatar name={doc.user?.name || doc.user?.email} size="sm" />
+                    <Avatar name={doc.user?.name || doc.user?.email} size="sm" aria-hidden="true" />
                     <span className="truncate text-muted-foreground">
                       {doc.user?.name || doc.user?.email || "Unknown"}
                     </span>

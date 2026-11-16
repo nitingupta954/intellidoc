@@ -44,14 +44,6 @@ export async function GET(req: Request) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const activeUsers = await db.message.groupBy({
-      by: ['conversationId'],
-      where: {
-        createdAt: { gte: thirtyDaysAgo },
-        conversation: { workspaceId }
-      },
-    });
-    // We actually need unique users, but messages don't have userId directly, they link to conversation which has userId
     const conversationsWithActivity = await db.conversation.findMany({
       where: {
         workspaceId,
@@ -66,7 +58,7 @@ export async function GET(req: Request) {
     // 3. AI Queries (Total user messages)
     const totalQueries = await db.message.count({
       where: {
-        role: "user",
+        role: { equals: "user", mode: "insensitive" },
         conversation: { workspaceId }
       }
     });
@@ -78,7 +70,7 @@ export async function GET(req: Request) {
 
     const recentMessages = await db.message.findMany({
       where: {
-        role: "user",
+        role: { equals: "user", mode: "insensitive" },
         createdAt: { gte: sevenDaysAgo },
         conversation: { workspaceId }
       },
@@ -145,7 +137,7 @@ export async function GET(req: Request) {
     // Fetch all evaluated assistant messages (those with at least one RAGAS score)
     const evaluatedMessages = await db.message.findMany({
       where: {
-        role: 'assistant',
+        role: { equals: "assistant", mode: "insensitive" },
         conversation: { workspaceId },
         faithfulness: { not: null },
       },
@@ -171,7 +163,7 @@ export async function GET(req: Request) {
       contextRecall:    avg(evaluatedMessages.map(m => m.contextRecall)),
       evaluatedCount:   evaluatedMessages.length,
       totalAssistantMessages: await db.message.count({
-        where: { role: 'assistant', conversation: { workspaceId } }
+        where: { role: { equals: "assistant", mode: "insensitive" }, conversation: { workspaceId } }
       }),
     };
 

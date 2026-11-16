@@ -1,14 +1,18 @@
 "use client";
 
+import { UserPlus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, Loader2 } from "lucide-react";
 
 interface InviteDialogProps {
   isOpen: boolean;
@@ -42,30 +45,47 @@ export function InviteDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <UserPlus size={16} />
-          Invite Member
+        <Button>
+          <UserPlus className="size-4" aria-hidden="true" />
+          Invite member
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-panel border-border/50">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite a new member</DialogTitle>
+          <DialogTitle>Invite a teammate</DialogTitle>
+          <DialogDescription>
+            Send an invitation to join this workspace. Role permissions apply
+            once they accept.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onInvite();
+          }}
+        >
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email address</label>
-            <Input 
-              type="email" 
-              placeholder="colleague@example.com" 
+            <label htmlFor="invite-email" className="text-sm font-medium">
+              Email address
+            </label>
+            <Input
+              id="invite-email"
+              type="email"
+              autoFocus
+              required
+              placeholder="colleague@company.com"
               value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="bg-background/50"
+              onChange={(event) => setInviteEmail(event.target.value)}
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Role</label>
+            <label htmlFor="invite-role" className="text-sm font-medium">
+              Role
+            </label>
             <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="bg-background/50">
+              <SelectTrigger id="invite-role" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -73,16 +93,21 @@ export function InviteDialog({
                 <SelectItem value="MEMBER">Member</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Admins can manage members and workspace content. Members can use
+              the workspace.
+            </p>
           </div>
-          <Button onClick={onInvite} className="w-full" disabled={isInviting}>
-            {isInviting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : "Send Invitation"}
-          </Button>
-        </div>
+          <DialogFooter className="-mx-0 -mb-0 mt-2 rounded-none border-0 bg-transparent p-0">
+            <Button
+              type="submit"
+              loading={isInviting}
+              disabled={!inviteEmail.trim()}
+            >
+              Send invitation
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

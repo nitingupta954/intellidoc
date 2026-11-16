@@ -54,12 +54,12 @@ export function AddExistingDialog({
                 >
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    className="w-4 h-4 rounded border-border text-primary-accent focus:ring-primary"
                     checked={selectedDocumentIds.includes(doc.id)}
                     onChange={() => toggleDocumentSelection(doc.id)}
                   />
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <FileText size={16} className="text-primary shrink-0" />
+                    <FileText size={16} className="text-primary-accent shrink-0" />
                     <span className="font-medium text-sm truncate">{doc.title}</span>
                   </div>
                 </label>

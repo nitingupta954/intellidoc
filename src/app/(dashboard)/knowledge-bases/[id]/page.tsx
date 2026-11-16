@@ -41,7 +41,7 @@ export default function KnowledgeBaseDetailPage() {
   if (loading) {
     return (
       <PageContainer className="flex h-full flex-col items-center justify-center gap-3">
-        <Loader2 className="size-7 animate-spin text-primary" />
+        <Loader2 className="size-7 animate-spin text-primary-accent" />
         <p className="text-sm text-muted-foreground">Loading collection…</p>
       </PageContainer>
     );

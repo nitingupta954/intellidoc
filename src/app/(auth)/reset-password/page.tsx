@@ -96,7 +96,7 @@ function ResetPasswordForm() {
       <div className="text-center space-y-2">
         <div className="flex justify-center pb-4">
           <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
-            <BrainCircuit className="h-6 w-6 text-primary" />
+            <BrainCircuit className="h-6 w-6 text-primary-accent" />
           </div>
         </div>
         <h1 className="text-3xl font-heading font-bold tracking-tight">Create New Password</h1>
@@ -161,7 +161,7 @@ export default function ResetPasswordPage() {
 
         <Suspense fallback={
           <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary-accent" />
           </div>
         }>
           <ResetPasswordForm />

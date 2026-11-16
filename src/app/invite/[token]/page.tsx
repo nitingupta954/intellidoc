@@ -84,7 +84,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="max-w-md w-full glass-panel p-8 text-center space-y-4">
-          <Building2 className="w-12 h-12 text-primary mx-auto mb-4" />
+          <Building2 className="w-12 h-12 text-primary-accent mx-auto mb-4" />
           <h1 className="text-2xl font-bold font-heading">Sign in required</h1>
           <p className="text-muted-foreground">
             You have been invited to join the workspace <strong>{invite?.workspace?.name}</strong>.
@@ -101,7 +101,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full glass-panel p-8 text-center space-y-6">
-        <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mx-auto mb-4 border border-primary/30">
+        <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary-accent mx-auto mb-4 border border-primary/30">
           <Building2 size={32} />
         </div>
         <div>

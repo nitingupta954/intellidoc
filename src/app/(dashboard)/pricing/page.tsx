@@ -35,7 +35,7 @@ export default function PricingPage() {
     <PageContainer variant="fullBleed" className="flex flex-col items-center pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-12 pt-4">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-wider mb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary-accent text-xs font-semibold uppercase tracking-wider mb-6">
           <Sparkles size={14} />
           Pricing
         </div>
@@ -127,7 +127,7 @@ export default function PricingPage() {
                       size={16}
                       className={cn(
                         "shrink-0 mt-0.5",
-                        plan.popular ? "text-primary" : "text-emerald-400"
+                        plan.popular ? "text-primary-accent" : "text-emerald-400"
                       )}
                     />
                     <span className="text-sm text-foreground/80">{f}</span>

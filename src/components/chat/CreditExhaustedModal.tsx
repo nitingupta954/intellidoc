@@ -37,7 +37,7 @@ export function CreditExhaustedModal() {
         <div className="flex flex-col gap-4 py-4">
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
             <div className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-primary" />
+              <Coins className="h-5 w-5 text-primary-accent" />
               <span className="font-medium">Current Balance</span>
             </div>
             <span className="font-bold text-destructive">

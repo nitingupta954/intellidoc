@@ -1,16 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface SecuritySettingsProps {
   currentPassword: string;
   setCurrentPassword: (val: string) => void;
   newPassword: string;
   setNewPassword: (val: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (val: string) => void;
   isPasswordSaving: boolean;
-  is2FAEnabled: boolean;
+  isPasswordDirty: boolean;
   onUpdatePassword: () => Promise<void>;
-  onToggle2FA: () => void;
+  onCancel: () => void;
 }
 
 export function SecuritySettings({
@@ -18,61 +29,118 @@ export function SecuritySettings({
   setCurrentPassword,
   newPassword,
   setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
   isPasswordSaving,
-  is2FAEnabled,
+  isPasswordDirty,
   onUpdatePassword,
-  onToggle2FA,
+  onCancel,
 }: SecuritySettingsProps) {
-  return (
-    <div className="space-y-6">
-      <div className="glass-panel p-6 border border-border/50">
-        <h2 className="text-xl font-heading font-semibold mb-6">Security & Access</h2>
-        
-        <div className="space-y-6">
-          <div className="space-y-4 pb-6 border-b border-border/50">
-            <h3 className="font-medium">Change Password</h3>
-            <div className="space-y-4 max-w-sm">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Current Password</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-3 py-2 glass bg-background/50 border border-border/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" 
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">New Password</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 glass bg-background/50 border border-border/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" 
-                />
-              </div>
-              <Button size="sm" onClick={onUpdatePassword} disabled={isPasswordSaving}>
-                {isPasswordSaving ? "Updating..." : "Update Password"}
-              </Button>
-            </div>
-          </div>
+  const passwordTooShort = newPassword.length > 0 && newPassword.length < 8;
+  const passwordsMismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword;
+  const canSubmit =
+    Boolean(currentPassword) &&
+    newPassword.length >= 8 &&
+    newPassword === confirmPassword &&
+    !isPasswordSaving;
 
-          <div className="flex items-center justify-between pb-6 border-b border-border/50">
-            <div className="max-w-md">
-              <h3 className="font-medium">Two-Factor Authentication (2FA)</h3>
-              <p className="text-sm text-muted-foreground mt-1">Add an extra layer of security to your account by requiring a verification code upon login.</p>
-            </div>
-            <Button 
-              variant={is2FAEnabled ? "default" : "outline"} 
-              className={is2FAEnabled ? "" : "glass"}
-              onClick={onToggle2FA}
-            >
-              {is2FAEnabled ? "Disable 2FA" : "Enable 2FA"}
-            </Button>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Password</CardTitle>
+        <CardDescription>
+          Use a unique password of at least 8 characters.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid max-w-md gap-4">
+          <div className="space-y-2">
+            <label htmlFor="current-password" className="text-sm font-medium">
+              Current password
+            </label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="new-password" className="text-sm font-medium">
+              New password
+            </label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              autoComplete="new-password"
+              aria-invalid={passwordTooShort || undefined}
+              aria-describedby={
+                passwordTooShort ? "new-password-error" : "new-password-hint"
+              }
+            />
+            {passwordTooShort ? (
+              <p
+                id="new-password-error"
+                className="text-xs text-destructive"
+                role="alert"
+              >
+                Use at least 8 characters.
+              </p>
+            ) : (
+              <p id="new-password-hint" className="text-xs text-muted-foreground">
+                At least 8 characters.
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="confirm-password" className="text-sm font-medium">
+              Confirm new password
+            </label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              aria-invalid={passwordsMismatch || undefined}
+              aria-describedby={
+                passwordsMismatch ? "confirm-password-error" : undefined
+              }
+            />
+            {passwordsMismatch ? (
+              <p
+                id="confirm-password-error"
+                className="text-xs text-destructive"
+                role="alert"
+              >
+                Passwords do not match.
+              </p>
+            ) : null}
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={!isPasswordDirty || isPasswordSaving}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={() => void onUpdatePassword()}
+          loading={isPasswordSaving}
+          disabled={!canSubmit}
+        >
+          Update password
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

@@ -226,7 +226,7 @@ export default function DocumentsPage() {
       {isDragOver ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-8 backdrop-blur-sm">
           <div className="flex w-full max-w-xl flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-card p-10 text-center shadow-overlay">
-            <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary-accent">
               <Upload className="size-6" aria-hidden="true" />
             </span>
             <h2 className="text-xl font-semibold">Drop files to upload</h2>

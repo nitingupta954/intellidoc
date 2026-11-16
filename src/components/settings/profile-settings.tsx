@@ -1,7 +1,18 @@
 "use client";
 
-import { User, Loader2, Upload } from "lucide-react";
+import { Camera, Loader2, Lock, Trash2 } from "lucide-react";
+
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 interface ProfileSettingsProps {
   firstName: string;
@@ -13,6 +24,7 @@ interface ProfileSettingsProps {
   isImageUploading: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   isProfileSaving: boolean;
+  isProfileDirty: boolean;
   onSaveProfile: () => Promise<void>;
   onImageUpload: React.ChangeEventHandler<HTMLInputElement>;
   onImageRemove: () => Promise<void>;
@@ -29,76 +41,169 @@ export function ProfileSettings({
   isImageUploading,
   fileInputRef,
   isProfileSaving,
+  isProfileDirty,
   onSaveProfile,
   onImageUpload,
   onImageRemove,
   onCancel,
 }: ProfileSettingsProps) {
+  const fullName = `${firstName} ${lastName}`.trim();
+  const nameError = isProfileDirty && !firstName.trim();
+
   return (
-    <div className="space-y-6">
-      <div className="glass-panel p-6 border border-border/50">
-        <h2 className="text-xl font-heading font-semibold mb-4">Personal Information</h2>
-        
-        <div className="flex items-center gap-6 mb-8">
-          <div 
-            className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary border-2 border-primary/30 relative group cursor-pointer overflow-hidden"
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile</CardTitle>
+        <CardDescription>
+          Your photo, display name, and sign-in email.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isImageUploading}
+            className="group relative inline-flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:opacity-70"
+            aria-label="Change profile photo"
           >
-            {isImageUploading ? (
-              <Loader2 size={24} className="animate-spin text-primary" />
-            ) : profileImage ? (
-              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <User size={32} />
-            )}
-            <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Upload size={20} />
+            <Avatar
+              src={profileImage}
+              name={fullName || "Your profile"}
+              size="lg"
+              className="size-20 text-lg"
+              aria-hidden="true"
+            />
+            <span className="absolute inset-0 flex items-center justify-center bg-foreground/55 text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+              {isImageUploading ? (
+                <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Camera className="size-5" aria-hidden="true" />
+              )}
+            </span>
+          </button>
+
+          <div className="min-w-0 space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              {fullName || "Your profile"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              PNG, JPG, WebP, or GIF up to 800 KB.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={onImageUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isImageUploading}
+              >
+                <Camera className="size-3.5" aria-hidden="true" />
+                Change photo
+              </Button>
+              {profileImage ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive-soft hover:text-destructive"
+                  onClick={() => void onImageRemove()}
+                  disabled={isImageUploading}
+                >
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                  Remove
+                </Button>
+              ) : null}
             </div>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <h3 className="font-medium">Profile Picture of {firstName + " " + lastName}</h3>
-            {/* <p className="text-sm text-muted-foreground">JPG, GIF or PNG.</p> */}
-            {/* <div className="flex gap-2">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/png, image/jpeg, image/gif" 
-                onChange={onImageUpload} 
+            <label htmlFor="profile-first-name" className="text-sm font-medium">
+              First name
+            </label>
+            <Input
+              id="profile-first-name"
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              autoComplete="given-name"
+              maxLength={40}
+              aria-invalid={nameError || undefined}
+              aria-describedby={nameError ? "profile-first-name-error" : undefined}
+            />
+            {nameError ? (
+              <p
+                id="profile-first-name-error"
+                className="text-xs text-destructive"
+                role="alert"
+              >
+                First name is required.
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="profile-last-name" className="text-sm font-medium">
+              Last name
+            </label>
+            <Input
+              id="profile-last-name"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              autoComplete="family-name"
+              maxLength={40}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <label htmlFor="profile-email" className="text-sm font-medium">
+              Email address
+            </label>
+            <div className="relative">
+              <Lock
+                className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
               />
-              <Button size="sm" variant="outline" className="glass h-8" onClick={() => fileInputRef.current?.click()} disabled={isImageUploading}>
-                Upload
-              </Button>
-              <Button size="sm" variant="ghost" className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onImageRemove} disabled={isImageUploading || !profileImage}>
-                Remove
-              </Button>
-            </div> */}
+              <Input
+                id="profile-email"
+                type="email"
+                value={email}
+                readOnly
+                disabled
+                className="pl-9"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Email changes are handled by support to keep account recovery
+              secure.
+            </p>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">First Name</label>
-            <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 glass bg-background/50 border border-border/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Last Name</label>
-            <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-3 py-2 glass bg-background/50 border border-border/50 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium">Email Address</label>
-            <input type="email" defaultValue={email} disabled className="w-full px-3 py-2 bg-background/30 border border-border/30 rounded-md text-sm text-muted-foreground cursor-not-allowed" />
-            <p className="text-xs text-muted-foreground mt-1">To change your email address, contact support.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3">
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button onClick={onSaveProfile} disabled={isProfileSaving}>
-          {isProfileSaving ? "Saving..." : "Save Changes"}
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={!isProfileDirty || isProfileSaving}
+        >
+          Cancel
         </Button>
-      </div>
-    </div>
+        <Button
+          type="button"
+          onClick={() => void onSaveProfile()}
+          loading={isProfileSaving}
+          disabled={!isProfileDirty || !firstName.trim()}
+        >
+          Save changes
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

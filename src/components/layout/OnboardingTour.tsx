@@ -1,119 +1,178 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Joyride, STATUS } from "react-joyride";
 import { usePathname } from "next/navigation";
+import { Joyride, STATUS } from "react-joyride";
+
+const TOUR_COMPLETED_KEY = "intellidoc_tour_completed";
+
+const TOUR_STEPS = [
+  {
+    target: "[data-tour='workspace-selector']",
+    title: "Switch workspaces",
+    content:
+      "Each workspace has its own members, documents, collections, and chat history. Switch here to move between isolated environments.",
+    placement: "right" as const,
+    skipBeacon: true,
+    spotlightPadding: 6,
+    spotlightRadius: 8,
+  },
+  {
+    target: "[data-tour='nav-kb']",
+    title: "Organize with collections",
+    content:
+      "Collections group related documents so answers stay focused. The AI searches only within the context you select.",
+    placement: "right" as const,
+    skipBeacon: true,
+    spotlightPadding: 6,
+    spotlightRadius: 8,
+  },
+  {
+    target: "[data-tour='nav-docs']",
+    title: "Upload and process documents",
+    content:
+      "Add PDFs and text files here. Processing status is visible per document, and indexed documents become searchable automatically.",
+    placement: "right" as const,
+    skipBeacon: true,
+    spotlightPadding: 6,
+    spotlightRadius: 8,
+  },
+  {
+    target: "[data-tour='nav-chat']",
+    title: "Ask with citations",
+    content:
+      "Ask questions across your workspace or a single collection. Answers cite the source passages they were grounded in.",
+    placement: "right" as const,
+    skipBeacon: true,
+    spotlightPadding: 6,
+    spotlightRadius: 8,
+  },
+];
+
+function targetsReady() {
+  return TOUR_STEPS.every((step) => {
+    const element = document.querySelector(step.target);
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+}
 
 export function OnboardingTour() {
   const [run, setRun] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
-    // Only run tour if user hasn't seen it and is on the dashboard
-    const hasSeenTour = localStorage.getItem("intellidoc_tour_completed");
-    if (!hasSeenTour && pathname === "/dashboard") {
-      setRun(true);
-      // Immediately set to true so if they refresh or navigate away mid-tour, it never restarts
-      localStorage.setItem("intellidoc_tour_completed", "true");
-    }
+    if (pathname !== "/dashboard") return;
+    if (localStorage.getItem(TOUR_COMPLETED_KEY) === "true") return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+
+    const tryStart = () => {
+      if (cancelled) return;
+      if (targetsReady()) {
+        localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+        setRun(true);
+        return;
+      }
+      if (attempts < 20) {
+        attempts += 1;
+        timer = window.setTimeout(tryStart, 150);
+      }
+    };
+
+    timer = window.setTimeout(tryStart, 350);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, [pathname]);
 
-  const steps = [
-    {
-      target: "body",
-      title: "Welcome to IntelliDoc! 🚀",
-      content: "Your enterprise document intelligence platform. Let's take a quick 30-second tour to show you how to securely manage, organize, and chat with your documents using advanced AI.",
-      placement: "center" as const,
-      disableBeacon: true,
-    },
-    {
-      target: "[data-tour='workspace-selector']",
-      title: "Workspaces",
-      content: "Workspaces are completely isolated environments. Create different workspaces for different teams (like HR, Legal, or Engineering) to keep documents and access strictly separated.",
-      placement: "right" as const,
-    },
-    {
-      target: "[data-tour='nav-kb']",
-      title: "Knowledge Bases",
-      content: "Think of Knowledge Bases as specialized, targeted libraries. Group specific documents together so the AI can answer questions using ONLY the context from that specific collection.",
-      placement: "right" as const,
-    },
-    {
-      target: "[data-tour='nav-docs']",
-      title: "Document Management",
-      content: "Upload your PDFs, Word documents, and text files here. Our system will automatically process and index them in the background, making them instantly searchable.",
-      placement: "right" as const,
-    },
-    {
-      target: "[data-tour='nav-chat']",
-      title: "IntelliDoc AI Chat",
-      content: "The core of IntelliDoc! Once your documents are indexed, come here to chat with them. You can ask complex questions, and the AI will provide highly accurate answers with exact citations from your files.",
-      placement: "right" as const,
-    }
-  ];
-
-  const handleJoyrideCallback = (data: any) => {
-    const { status } = data;
-    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
-
-    // If the user skips, finishes, or even if they close it, we mark it as completed
-    if (finishedStatuses.includes(status)) {
+  const handleJoyrideCallback = (data: {
+    status: string;
+  }) => {
+    if (data.status === STATUS.FINISHED || data.status === STATUS.SKIPPED) {
       setRun(false);
-      localStorage.setItem("intellidoc_tour_completed", "true");
     }
   };
 
-  const JoyrideComponent: any = Joyride;
+  const JoyrideComponent = Joyride as unknown as React.ComponentType<
+    Record<string, unknown>
+  >;
 
   return (
     <JoyrideComponent
-      steps={steps}
+      steps={TOUR_STEPS}
       run={run}
       continuous
-      showSkipButton
-      showProgress
+      scrollToFirstStep
       callback={handleJoyrideCallback}
+      options={{
+        primaryColor: "var(--primary)",
+        textColor: "var(--foreground)",
+        backgroundColor: "var(--card)",
+        overlayColor: "var(--overlay)",
+        arrowColor: "var(--card)",
+        zIndex: 1000,
+        showProgress: true,
+        buttons: ["back", "close", "primary", "skip"],
+        width: 380,
+      }}
+      locale={{
+        skip: "Skip tour",
+        last: "Done",
+      }}
       styles={{
-        options: {
-          primaryColor: 'var(--primary)',
-          textColor: 'var(--foreground)',
-          backgroundColor: 'var(--card)',
-          overlayColor: 'var(--overlay)',
-          zIndex: 1000,
-        },
         tooltip: {
-          borderRadius: '16px',
-          padding: '24px',
-          boxShadow: 'var(--shadow-overlay)',
+          borderRadius: 16,
+          padding: 24,
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow-overlay)",
+        },
+        tooltipContainer: {
+          textAlign: "left",
         },
         tooltipTitle: {
-          fontSize: '1.25rem',
-          fontWeight: 700,
-          marginBottom: '12px',
-          color: 'var(--foreground)',
+          fontSize: "1.125rem",
+          fontWeight: 600,
+          marginBottom: 8,
+          color: "var(--foreground)",
         },
         tooltipContent: {
-          fontSize: '0.95rem',
-          lineHeight: 1.6,
-          color: 'var(--muted-foreground)',
-          textAlign: 'left' as const,
+          fontSize: "0.875rem",
+          lineHeight: 1.65,
+          color: "var(--muted-foreground)",
+          textAlign: "left",
+          padding: 0,
+        },
+        buttonClose: {
+          color: "var(--muted-foreground)",
         },
         buttonNext: {
-          backgroundColor: 'var(--primary)',
-          color: 'var(--primary-foreground)',
-          borderRadius: '8px',
-          padding: '10px 16px',
+          backgroundColor: "var(--primary)",
+          color: "var(--primary-foreground)",
+          borderRadius: 8,
+          padding: "8px 14px",
+          fontSize: "0.875rem",
           fontWeight: 500,
         },
         buttonBack: {
-          marginRight: '12px',
-          color: 'var(--muted-foreground)',
+          marginRight: 8,
+          color: "var(--muted-foreground)",
+          fontSize: "0.875rem",
           fontWeight: 500,
         },
         buttonSkip: {
-          color: 'var(--muted-foreground)',
+          color: "var(--muted-foreground)",
+          fontSize: "0.875rem",
           fontWeight: 500,
-        }
+        },
+        progress: {
+          color: "var(--muted-foreground)",
+        },
       }}
     />
   );
