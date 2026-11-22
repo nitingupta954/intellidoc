@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 export async function GET(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -14,6 +14,20 @@ export async function GET(req: Request) {
 
     if (!workspaceId) {
       return new NextResponse("Workspace ID is required", { status: 400 });
+    }
+
+    const membership = await db.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return new NextResponse("Forbidden", { status: 403 });
     }
 
     const folders = await db.folder.findMany({
@@ -41,7 +55,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -65,6 +79,17 @@ export async function POST(req: Request) {
 
     if (!workspace) {
       return new NextResponse("Workspace not found or access denied", { status: 404 });
+    }
+
+    if (parentId) {
+      const parent = await db.folder.findFirst({
+        where: { id: parentId, workspaceId },
+        select: { id: true },
+      });
+
+      if (!parent) {
+        return new NextResponse("Parent folder not found", { status: 400 });
+      }
     }
 
     const folder = await db.folder.create({

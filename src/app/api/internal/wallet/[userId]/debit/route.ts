@@ -9,7 +9,10 @@ export async function POST(
   try {
     const params = await props.params;
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${env.INTERNAL_SERVICE_SECRET}`) {
+    if (
+      !env.INTERNAL_SERVICE_SECRET ||
+      authHeader !== `Bearer ${env.INTERNAL_SERVICE_SECRET}`
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

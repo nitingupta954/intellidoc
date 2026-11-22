@@ -186,7 +186,7 @@ function SidebarLink({
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         collapsed ? "mx-auto size-10 justify-center" : "h-10 gap-3 px-3",
         active
-          ? "bg-accent font-medium text-primary-accent"
+          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
     >

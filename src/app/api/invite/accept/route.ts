@@ -30,7 +30,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invitation expired or already used" }, { status: 400 });
     }
 
-    if (invitation.email !== userEmail) {
+    if (
+      !userEmail ||
+      invitation.email.toLowerCase() !== userEmail.toLowerCase()
+    ) {
       return NextResponse.json({ error: "Invitation email does not match logged-in user" }, { status: 403 });
     }
 

@@ -61,7 +61,7 @@ export function NotificationSettings({
   onCancel,
 }: NotificationSettingsProps) {
   return (
-    <Card>
+    <Card className="pt-3">
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
         <CardDescription>

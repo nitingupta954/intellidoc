@@ -23,6 +23,20 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
+    const membership = await db.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: conversation.workspaceId,
+          userId: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const messages = await db.message.findMany({
       where: { conversationId: params.id },
       orderBy: { createdAt: 'asc' }
@@ -122,6 +136,20 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
+    const membership = await db.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: conversation.workspaceId,
+          userId: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { message } = body;
 
@@ -187,15 +215,23 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const documentSummaries: Record<string, string> = {};
 
     if (metadata.documentId) {
-      documentIds = [metadata.documentId];
-      const doc = await db.document.findUnique({
-        where: { id: metadata.documentId },
+      const doc = await db.document.findFirst({
+        where: {
+          id: metadata.documentId,
+          workspaceId: conversation.workspaceId,
+        },
         select: { id: true, summary: true }
       });
-      if (doc && doc.summary) documentSummaries[doc.id] = doc.summary;
+      if (doc) {
+        documentIds = [doc.id];
+        if (doc.summary) documentSummaries[doc.id] = doc.summary;
+      }
     } else if (conversation.knowledgeBaseId) {
       const docs = await db.document.findMany({
-        where: { knowledgeBaseId: conversation.knowledgeBaseId },
+        where: {
+          knowledgeBaseId: conversation.knowledgeBaseId,
+          workspaceId: conversation.workspaceId,
+        },
         select: { id: true, summary: true }
       });
       documentIds = docs.map((d: { id: string; summary: string | null }) => d.id);

@@ -78,6 +78,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    if (knowledgeBaseId) {
+      const knowledgeBase = await db.knowledgeBase.findFirst({
+        where: { id: knowledgeBaseId, workspaceId },
+        select: { id: true },
+      });
+
+      if (!knowledgeBase) {
+        return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
+      }
+    }
+
+    if (documentId) {
+      const document = await db.document.findFirst({
+        where: { id: documentId, workspaceId },
+        select: { id: true },
+      });
+
+      if (!document) {
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      }
+    }
+
     const conversation = await db.conversation.create({
       data: {
         title,

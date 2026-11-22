@@ -5,16 +5,16 @@ import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { UploadQueueItem } from "@/components/documents/upload-section";
 import { formatFileSize } from "@/lib/format";
-
-const ACCEPTED_EXTENSIONS = ["pdf", "docx", "pptx", "txt", "md", "csv", "json"];
-const MAX_FILE_SIZE = 20 * 1024 * 1024;
+import {
+  isAcceptedUploadName,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/upload-limits";
 
 function validateFile(file: File): string | null {
-  const extension = file.name.split(".").pop()?.toLowerCase() || "";
-  if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+  if (!isAcceptedUploadName(file.name)) {
     return "Unsupported file type. Use PDF, DOCX, PPTX, TXT, MD, CSV, or JSON.";
   }
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return `File is ${formatFileSize(file.size)}. The limit is 20 MB.`;
   }
   return null;

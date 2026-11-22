@@ -119,7 +119,7 @@ export function ApiSettings({
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="pt-3">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
@@ -184,7 +184,7 @@ export function ApiSettings({
         </CardFooter>
       </Card>
 
-      <Card>
+      <Card className="pt-3">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>

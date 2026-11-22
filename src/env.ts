@@ -9,7 +9,7 @@ const serverSchema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
-  INTERNAL_SERVICE_SECRET: z.string().default('default_internal_secret_for_dev'),
+  INTERNAL_SERVICE_SECRET: z.string().min(16).optional(),
   LOW_BALANCE_THRESHOLD: z.coerce.number().default(5000),
   NEGATIVE_GRACE_CREDITS: z.coerce.number().default(2000),
 });

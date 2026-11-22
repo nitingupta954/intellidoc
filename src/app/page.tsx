@@ -3,17 +3,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   BrainCircuit,
+  ChartColumn,
   CheckCircle2,
-  FileCheck2,
+  FileDown,
+  FileStack,
   FileText,
-  FolderKanban,
+  FolderTree,
   KeyRound,
+  LibraryBig,
   LockKeyhole,
-  Quote,
+  MailPlus,
+  MessagesSquare,
   Share2,
   ShieldCheck,
   Sparkles,
-  Users,
+  Zap,
 } from "lucide-react";
 
 import { ProductShot } from "@/components/home/product-shot";
@@ -42,52 +46,76 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: "Workspace isolation",
+    icon: FileStack,
+    title: "Multi-Format Upload",
     description:
-      "Keep members, documents, collections, and chat history separate. Workspace access is resolved before data is returned.",
+      "Upload PDFs, DOCX, PPTX, TXT, Markdown, CSV, and JSON files, with progress that follows every file from upload to index.",
   },
   {
-    icon: FolderKanban,
-    title: "Focused collections",
+    icon: FolderTree,
+    title: "Folder Organization",
     description:
-      "Group related documents into collections, then scope a conversation to one collection or the whole workspace.",
+      "Keep related documents together with nested folders and breadcrumbs, so even large workspaces stay easy to navigate.",
   },
   {
-    icon: Quote,
-    title: "Citations you can inspect",
+    icon: Sparkles,
+    title: "Auto Summaries",
     description:
-      "Assistant answers surface the source passages they used, so every claim can be checked against the document.",
+      "Generate concise AI summaries for faster understanding, then ask questions from the points that matter most.",
   },
   {
-    icon: FileCheck2,
-    title: "Visible processing",
+    icon: MessagesSquare,
+    title: "RAG Chat",
     description:
-      "Follow each file from upload to indexed. Failed and in-progress documents are called out instead of silently dropped.",
+      "Chat with your documents using retrieval-augmented generation grounded in the passages that support each answer.",
   },
   {
-    icon: Users,
-    title: "Roles and invitations",
+    icon: FileDown,
+    title: "Chat Export",
     description:
-      "Owner, admin, and member roles control who can manage the workspace. Invite teammates by email when they are ready.",
+      "Export conversations as Markdown or PDF whenever you need a portable record of the discussion.",
   },
   {
     icon: Share2,
-    title: "Share and export",
+    title: "Shared Links",
     description:
-      "Create share links for conversations and documents, or export a chat as Markdown or PDF for the record.",
+      "Share secure, expiring links to documents and conversations, with access scoped to the people you choose.",
+  },
+  {
+    icon: LibraryBig,
+    title: "Knowledge Bases",
+    description:
+      "Organize documents into knowledge bases that scope retrieval to the right content for every conversation.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Security & RBAC",
+    description:
+      "Control access with owner, admin, and member roles, plus workspace isolation across everything you store.",
+  },
+  {
+    icon: ChartColumn,
+    title: "Analytics Dashboard",
+    description:
+      "Monitor document counts, query activity, storage usage, and active users from a single workspace overview.",
   },
   {
     icon: KeyRound,
-    title: "Bring your own model key",
+    title: "Bring Your Own Key",
     description:
-      "Use the system Gemini default or add your own Gemini or OpenAI key. Saved keys are masked after saving.",
+      "Use the system Gemini default or connect your own Gemini or OpenAI key. Saved keys stay masked after saving.",
   },
   {
-    icon: FileText,
-    title: "Read where the answer lives",
+    icon: MailPlus,
+    title: "Email Invitations",
     description:
-      "Open a PDF or text document in the viewer, then move straight into a conversation scoped to that file.",
+      "Invite teammates by email through SMTP and give each person the workspace role they need from day one.",
+  },
+  {
+    icon: Zap,
+    title: "Real-Time Processing",
+    description:
+      "An asynchronous pipeline indexes every document and keeps its live status visible while the work runs.",
   },
 ];
 
@@ -295,9 +323,13 @@ export default function Home() {
 
           <section
             id="features"
-            className="scroll-mt-24 px-5 py-20 sm:py-24"
+            className="relative scroll-mt-24 overflow-hidden px-5 py-20 sm:py-24"
           >
-            <div className="mx-auto max-w-6xl">
+            <div
+              className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(148_163_184_/_0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgb(148_163_184_/_0.1)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_78%)]"
+              aria-hidden="true"
+            />
+            <div className="relative mx-auto max-w-6xl">
               <div className="max-w-2xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-accent">
                   Features
@@ -312,16 +344,16 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {FEATURES.map((feature) => {
                   const Icon = feature.icon;
                   return (
                     <article
                       key={feature.title}
-                      className="rounded-xl border border-border bg-card p-5 shadow-card"
+                      className="group h-full rounded-xl border border-border bg-card p-5 shadow-card transition-[border-color,box-shadow] duration-200 hover:border-primary/25 hover:shadow-lg"
                     >
-                      <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                        <Icon className="size-4" aria-hidden="true" />
+                      <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary-accent ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
+                        <Icon className="size-5" aria-hidden="true" />
                       </span>
                       <h3 className="mt-4 text-sm font-semibold text-foreground">
                         {feature.title}

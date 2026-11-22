@@ -46,7 +46,7 @@ export function SecuritySettings({
     !isPasswordSaving;
 
   return (
-    <Card>
+    <Card className="pt-3">
       <CardHeader>
         <CardTitle>Password</CardTitle>
         <CardDescription>

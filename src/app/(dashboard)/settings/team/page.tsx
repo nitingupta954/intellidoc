@@ -85,7 +85,7 @@ export default function TeamSettingsPage() {
         actions={workspaceDialogElement}
       />
 
-      <Card>
+      <Card className="p-3">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

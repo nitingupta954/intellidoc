@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { FileText, MessageSquare, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function SharedResourcePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = await params;
@@ -24,13 +32,13 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
   // Check expiration
   if (sharedLink.expiresAt && sharedLink.expiresAt < new Date()) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+      <main className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
         <div className="max-w-md w-full glass-panel p-8 rounded-2xl text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
           <h1 className="text-2xl font-bold">Link Expired</h1>
           <p className="text-muted-foreground">This shared link is no longer valid.</p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -55,7 +63,7 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col p-4 md:p-8 items-center">
+    <main className="min-h-screen bg-background text-foreground flex flex-col p-4 md:p-8 items-center">
       <div className="w-full max-w-4xl glass-panel border border-border/50 rounded-2xl p-6 mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -76,7 +84,7 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
             <h2 className="text-xl font-medium">{(resource as any).filename}</h2>
             <p className="text-muted-foreground">{(resource as any).summary || "No summary available"}</p>
             <Button asChild>
-              <a href={`/api/documents/${(resource as any).id}/download`} download>Download Document</a>
+              <a href={`/api/shared/${token}/download`} download>Download Document</a>
             </Button>
           </div>
         )}
@@ -95,6 +103,6 @@ export default async function SharedResourcePage({ params }: { params: Promise<{
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

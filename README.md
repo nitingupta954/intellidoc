@@ -45,19 +45,19 @@ IntelliDoc is built from the ground up for multi-tenant team collaboration. The 
 - **Secure Invitations** — Send beautifully formatted email invitations via SMTP or generate shareable invite links for rapid team onboarding.
 - **Isolated Data Silos** — Every workspace acts as a strict tenant boundary. Documents, conversations, and vectors never leak across workspaces.
 - **Shared Knowledge** — Upload documents and organize them into shared Knowledge Bases that any workspace member can query and interact with.
-- **Team Management** — Full team management dashboard for inviting members, changing roles, and removing users.
+- **Team Management** — Team dashboard for inviting and removing workspace members.
 
 ### ⚙️ Settings & Account Management
 - **Profile Management** — Update name, upload/remove profile picture, and manage account details.
 - **API Key Management** — Bring your own OpenAI and/or Gemini API keys. A system default Gemini key is provided for free-tier users.
-- **Security & Access** — Change password, enable/disable Two-Factor Authentication (2FA).
+- **Security & Access** — Change your password and manage account access.
 - **Notification Preferences** — Configure email digest, document processing alerts, security alerts, and new feature announcements.
 - **Appearance** — Switch between Light, Dark, and System themes with smooth transitions.
 
 ### Platform
 - **🔐 Multi-Provider Auth** — Sign in with Google, GitHub, or email/password credentials via NextAuth v5.
 - **💳 Subscription & Payments** — Integrated Razorpay payment gateway with Free, Pro, and Enterprise tiers.
-- **📊 Analytics Dashboard** — Track total documents, query volume, vector storage usage, and active users with interactive Recharts visualizations (bar charts, area charts). Includes real-time system infrastructure health monitoring.
+- **📊 Workspace Analytics** — Workspace metrics for document counts, query activity, storage usage, and active users, exposed through `/api/analytics` and dashboard visualizations.
 - **🌗 Dark/Light Theme** — Beautiful, responsive UI with full dark mode support and smooth transitions.
 - **📱 Responsive Design** — Works seamlessly across desktop, tablet, and mobile viewports with mobile-optimized drawers and card layouts.
 - **📧 Email System** — Transactional email service (Nodemailer + SMTP) for password resets, workspace invitations, and contact form submissions.
@@ -121,7 +121,6 @@ intellidoc/
 │   │   │   ├── reset-password/       # Password reset page
 │   │   │   └── verify-email/         # Email verification page
 │   │   ├── (dashboard)/              # Protected app pages
-│   │   │   ├── analytics/            # Usage analytics & system health
 │   │   │   ├── billing/              # Subscription management
 │   │   │   ├── chat/                 # AI chat interface with export & share
 │   │   │   ├── dashboard/            # Home dashboard
@@ -140,7 +139,6 @@ intellidoc/
 │   │   │   │       └── messages/     # Chat messages (SSE stream)
 │   │   │   │           └── resolve/  # CRAG web-search resolution endpoint
 │   │   │   ├── documents/            # Document CRUD
-│   │   │   │   ├── upload/           # Upload handler
 │   │   │   │   └── [id]/             # Single document + download
 │   │   │   │       └── download/     # File download/preview
 │   │   │   ├── folders/              # Folder CRUD (create, list, delete)
@@ -167,7 +165,7 @@ intellidoc/
 │   │   ├── invite/                   # Invitation landing page
 │   │   ├── privacy/                  # Privacy policy page
 │   │   ├── shared/                   # Shared resource viewer (public)
-│   │   │   └── [token]/              # View shared docs/conversations
+│   │   │   └── [token]/              # View shared docs/conversations + download
 │   │   ├── terms/                    # Terms of service page
 │   │   ├── globals.css               # Global styles & design tokens
 │   │   ├── layout.tsx                # Root layout
@@ -208,7 +206,7 @@ intellidoc/
 │   │   │   ├── api-settings.tsx      # API key management
 │   │   │   ├── notification-settings.tsx
 │   │   │   ├── profile-settings.tsx  # Profile editor
-│   │   │   └── security-settings.tsx # Password & 2FA
+│   │   │   └── security-settings.tsx # Password management
 │   │   ├── team/                     # Team management components
 │   │   │   ├── invite-dialog.tsx     # Invitation modal
 │   │   │   ├── members-table.tsx     # Members list table
@@ -536,13 +534,13 @@ In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/upload` | Upload a document (multipart/form-data) |
+| `POST` | `/api/upload` | Request a presigned document upload URL |
+| `POST` | `/api/upload/complete` | Finalize an upload and enqueue processing |
 | `GET` | `/api/documents` | List workspace documents |
 | `GET` | `/api/documents/[id]` | Get document details (metadata, summary) |
 | `GET` | `/api/documents/[id]/download` | Download/preview original file |
-| `PATCH` | `/api/documents/[id]` | Update document metadata/status |
+| `PATCH` | `/api/documents/[id]` | Update document folder (members) or pipeline fields (internal service) |
 | `DELETE` | `/api/documents/[id]` | Delete a document |
-| `POST` | `/api/documents/upload` | Upload with document metadata |
 | `GET/POST` | `/api/folders` | List or create folders |
 | `GET/PATCH/DELETE` | `/api/folders/[id]` | Get, update, or delete a folder |
 | `POST` | `/api/conversations` | Create a new conversation |
@@ -552,7 +550,8 @@ In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 | `POST` | `/api/conversations/[id]/messages/resolve` | Resolve CRAG web search confirmation |
 | `POST` | `/api/voice/transcribe` | Transcribe audio via Whisper |
 | `GET/POST` | `/api/knowledge-bases` | List or create knowledge bases |
-| `GET/POST` | `/api/shared-links` | Generate or list shared links |
+| `POST` | `/api/shared-links` | Create an expiring document or conversation share link |
+| `GET` | `/api/shared/[token]/download` | Download a shared document (public) |
 | `GET/POST/DELETE` | `/api/workspaces` | Workspace CRUD |
 | `GET/POST/DELETE` | `/api/workspaces/[id]/members` | Manage workspace members |
 | `POST` | `/api/workspaces/[id]/invite` | Invite users to workspace |

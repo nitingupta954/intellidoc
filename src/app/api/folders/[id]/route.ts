@@ -8,13 +8,51 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const resolvedParams = await params;
     const body = await req.json();
     const { name, parentId } = body;
+
+    const existing = await db.folder.findUnique({
+      where: { id: resolvedParams.id },
+      select: { id: true, workspaceId: true },
+    });
+
+    if (!existing) {
+      return new NextResponse("Folder not found", { status: 404 });
+    }
+
+    const membership = await db.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: existing.workspaceId,
+          userId: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+
+    if (parentId) {
+      if (parentId === existing.id) {
+        return new NextResponse("A folder cannot contain itself", { status: 400 });
+      }
+
+      const parent = await db.folder.findFirst({
+        where: { id: parentId, workspaceId: existing.workspaceId },
+        select: { id: true },
+      });
+
+      if (!parent) {
+        return new NextResponse("Parent folder not found", { status: 400 });
+      }
+    }
 
     const folder = await db.folder.update({
       where: {
@@ -39,15 +77,35 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const resolvedParams = await params;
 
-    // This uses cascade delete for children, or handles it if not setup with cascade.
-    // In our schema, Folders to Folders is SetNull for parent.
-    // So we need to delete the folder itself.
+    const existing = await db.folder.findUnique({
+      where: { id: resolvedParams.id },
+      select: { id: true, workspaceId: true },
+    });
+
+    if (!existing) {
+      return new NextResponse("Folder not found", { status: 404 });
+    }
+
+    const membership = await db.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: existing.workspaceId,
+          userId: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+
     const folder = await db.folder.delete({
       where: {
         id: resolvedParams.id,

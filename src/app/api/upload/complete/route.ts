@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createDocumentRecord } from "@/actions/documents";
 import { publishDocumentJob } from "@/lib/rabbitmq";
+import {
+  getUploadMimeType,
+  isAcceptedUploadName,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/upload-limits";
 
 export async function POST(req: Request) {
   try {
@@ -11,27 +16,61 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { storageKey, fileName, fileType, fileSize, workspaceId, knowledgeBaseId, folderId } = body;
+    const {
+      storageKey,
+      fileName,
+      fileType,
+      fileSize,
+      workspaceId,
+      knowledgeBaseId,
+      folderId,
+    } = body;
 
-    if (!storageKey || !workspaceId) {
+    if (
+      typeof storageKey !== "string" ||
+      typeof fileName !== "string" ||
+      typeof fileType !== "string" ||
+      typeof fileSize !== "number" ||
+      typeof workspaceId !== "string" ||
+      !storageKey ||
+      !fileName ||
+      !workspaceId
+    ) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    if (
+      !isAcceptedUploadName(fileName) ||
+      !Number.isFinite(fileSize) ||
+      fileSize <= 0 ||
+      fileSize > MAX_UPLOAD_BYTES
+    ) {
+      return NextResponse.json({ error: "Invalid file details" }, { status: 400 });
+    }
+
+    if (!storageKey.startsWith(`${workspaceId}/`)) {
+      return NextResponse.json({ error: "Invalid storage key" }, { status: 400 });
+    }
+
+    const safeFileName = fileName.split(/[\\/]/).pop() || "document";
+
     // Now that the file is successfully uploaded to S3, we create the database record
     const dbRecord = await createDocumentRecord({
-      title: fileName.split('.').slice(0, -1).join('.'),
-      filename: storageKey, // We use storageKey as filename to avoid duplicates
-      storageKey: storageKey,
-      fileSize: fileSize,
-      mimeType: fileType,
-      uploadedBy: session.user.id,
+      title: safeFileName.replace(/\.[^.]+$/, ""),
+      filename: safeFileName,
+      storageKey,
+      fileSize,
+      mimeType: getUploadMimeType(fileName),
       workspaceId,
       knowledgeBaseId,
       folderId,
     });
 
     if (!dbRecord.success || !dbRecord.data) {
-      return NextResponse.json({ error: "Failed to create database record" }, { status: 500 });
+      return NextResponse.json(
+        { error: dbRecord.error || "Failed to create database record" },
+        { status: dbRecord.error === "Forbidden." ? 403 : 400 }
+      );
     }
 
     const document = dbRecord.data;

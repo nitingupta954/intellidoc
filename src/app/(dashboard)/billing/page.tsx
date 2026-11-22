@@ -211,7 +211,7 @@ export default function BillingPage() {
       />
 
       {subscription ? (
-        <Card>
+        <Card className="p-3">
           <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle>Current plan</CardTitle>
@@ -239,7 +239,7 @@ export default function BillingPage() {
 
       <BillingSettings />
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden p-3">
         <CardHeader className="flex flex-col gap-3 border-b border-border">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">

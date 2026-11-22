@@ -61,7 +61,11 @@ async def update_document_status(document_id: str, data: dict):
         frontend_url = settings.ALLOWED_ORIGIN.rstrip("/")
         url = f"{frontend_url}/api/documents/{document_id}"
         async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.patch(url, json=data)
+            await client.patch(
+                url,
+                json=data,
+                headers={"X-Internal-Secret": settings.INTERNAL_SERVICE_SECRET},
+            )
     except Exception as e:
         logger.error(f"Failed to update document status in Next.js: {e}")
 

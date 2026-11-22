@@ -51,7 +51,7 @@ export function ProfileSettings({
   const nameError = isProfileDirty && !firstName.trim();
 
   return (
-    <Card>
+    <Card className="pt-3">
       <CardHeader>
         <CardTitle>Profile</CardTitle>
         <CardDescription>

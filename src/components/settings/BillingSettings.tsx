@@ -130,7 +130,7 @@ export function BillingSettings() {
       </h2>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="pt-3">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -157,7 +157,7 @@ export function BillingSettings() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="p-3">
           <CardHeader>
             <CardTitle>Usage metrics</CardTitle>
             <CardDescription>
@@ -195,7 +195,7 @@ export function BillingSettings() {
             }).format(pricePerThousand);
 
             return (
-              <Card key={pack.id} className="flex min-w-0 flex-col">
+              <Card key={pack.id} className="flex min-w-0 flex-col pt-3">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Zap className="size-4 text-primary-accent" aria-hidden="true" />

@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { WorkspaceDialog } from "@/components/team/workspace-dialog";
 import { useCreateWorkspace } from "@/hooks/use-create-workspace";
-import { Building2, Check, ChevronDown, Loader2, Plus } from "lucide-react";
+import { Building2, Check, ChevronDown, Loader2, Plus, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface WorkspaceSwitcherProps {
   collapsed?: boolean;
@@ -27,6 +28,7 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
     useWorkspaceStore();
   const [open, setOpen] = useState(false);
   const create = useCreateWorkspace();
+  const router = useRouter();
 
   useEffect(() => {
     loadWorkspaces();
@@ -37,8 +39,9 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
   const menu = (
     <DropdownMenuContent
       align="start"
+      alignOffset={collapsed ? -4 : 0}
       side={collapsed ? "right" : "bottom"}
-      sideOffset={8}
+      sideOffset={collapsed ? 12 : 8}
       collisionPadding={8}
       className="w-64"
     >
@@ -71,6 +74,18 @@ export function WorkspaceSwitcher({ collapsed = false, onNavigate }: WorkspaceSw
           </DropdownMenuItem>
         ))
       )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onSelect={() => {
+          setOpen(false);
+          router.push("/settings/team");
+          onNavigate?.();
+        }}
+        className="gap-2 py-2"
+      >
+        <Settings2 className="size-4" />
+        Manage workspace
+      </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem
         onSelect={() => {
