@@ -190,7 +190,11 @@ function SidebarLink({
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
     >
-      <Icon className="size-5 shrink-0" strokeWidth={active ? 2.1 : 1.8} aria-hidden="true" />
+      <Icon
+        className={cn("size-5 shrink-0 transition-colors", active ? "text-primary-accent" : "")}
+        strokeWidth={active ? 2.1 : 1.8}
+        aria-hidden="true"
+      />
       {!collapsed ? <span className="truncate">{label}</span> : null}
     </Link>
   );

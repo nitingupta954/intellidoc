@@ -19,7 +19,6 @@ export default function middleware(req: NextRequest) {
                           pathname.startsWith("/documents") ||
                           pathname.startsWith("/chat") ||
                           pathname.startsWith("/knowledge-bases") ||
-                          pathname.startsWith("/pricing") ||
                           pathname.startsWith("/analytics") ||
                           pathname.startsWith("/billing") ||
                           pathname.startsWith("/settings");

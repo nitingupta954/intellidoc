@@ -24,7 +24,7 @@ import { ProductShot } from "@/components/home/product-shot";
 import { WorkspaceShowcase } from "@/components/home/workspace-showcase";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
-import { PLANS } from "@/config/pricing";
+import { CREDIT_PACKS_LIST } from "@/lib/creditPacks";
 import { env } from "@/env";
 
 export const metadata: Metadata = {
@@ -135,10 +135,10 @@ export default function Home() {
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "INR",
-      lowPrice: Math.min(...PLANS.map((plan) => plan.priceAmount)),
-      highPrice: Math.max(...PLANS.map((plan) => plan.priceAmount)),
-      offerCount: PLANS.length,
-      offers: PLANS.map((plan) => ({
+      lowPrice: Math.min(...CREDIT_PACKS_LIST.map((plan) => plan.priceAmount)),
+      highPrice: Math.max(...CREDIT_PACKS_LIST.map((plan) => plan.priceAmount)),
+      offerCount: CREDIT_PACKS_LIST.length,
+      offers: CREDIT_PACKS_LIST.map((plan) => ({
         "@type": "Offer",
         name: plan.name,
         price: plan.priceAmount,
@@ -184,9 +184,6 @@ export default function Home() {
               <a href="#how-it-works" className="transition-colors hover:text-foreground">
                 How it works
               </a>
-              <Link href="/pricing" className="transition-colors hover:text-foreground">
-                Pricing
-              </Link>
             </nav>
 
             <div className="ml-auto flex items-center gap-2">
@@ -456,7 +453,7 @@ export default function Home() {
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/pricing">View pricing</Link>
+                  <a href="#features">Explore features</a>
                 </Button>
               </div>
             </div>
@@ -472,9 +469,6 @@ export default function Home() {
               <span>© {new Date().getFullYear()} IntelliDoc AI</span>
             </div>
             <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-5">
-              <Link href="/pricing" className="transition-colors hover:text-foreground">
-                Pricing
-              </Link>
               <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Privacy
               </Link>

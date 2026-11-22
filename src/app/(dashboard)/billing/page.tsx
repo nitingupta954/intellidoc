@@ -230,9 +230,6 @@ export default function BillingPage() {
                 ? `Current period ends ${formatDate(subscription.currentPeriodEnd)}`
                 : "No renewal date is set for this plan."}
             </span>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/pricing">Compare plans</Link>
-            </Button>
           </CardContent>
         </Card>
       ) : null}
