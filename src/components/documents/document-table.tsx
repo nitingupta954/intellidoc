@@ -36,6 +36,7 @@ interface DocumentTableProps {
   documents: any[];
   onOpenFolder?: (id: string) => void;
   onDelete: (id: string) => void;
+  deletingId?: string | null;
 }
 
 export function getDocumentName(doc: {
@@ -111,7 +112,11 @@ export function DocumentActions({
           <MoreVertical className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-48">
+      <DropdownMenuContent
+        align={align}
+        className="w-48"
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         {showChat ? (
           <DropdownMenuItem
             onSelect={() =>
@@ -139,7 +144,7 @@ export function DocumentActions({
         <DropdownMenuItem
           variant="destructive"
           className="gap-2"
-          onSelect={() => onDelete(doc.id)}
+          onSelect={(e) => { e.stopPropagation(); onDelete(doc.id); }}
         >
           <Trash2 className="size-4" /> Delete
         </DropdownMenuItem>
@@ -153,6 +158,7 @@ export function DocumentTable({
   documents,
   onOpenFolder,
   onDelete,
+  deletingId,
 }: DocumentTableProps) {
   const router = useRouter();
 
@@ -215,7 +221,14 @@ export function DocumentTable({
               <tr
                 key={doc.id}
                 className="group cursor-pointer transition-colors hover:bg-muted/40"
-                onClick={() => router.push(`/documents/${doc.id}`)}
+                onClick={(e) => {
+                  // Don't navigate if click came from the actions column
+                  const actionsCell = (e.currentTarget as HTMLElement).querySelector(
+                    "[data-actions-cell]"
+                  );
+                  if (actionsCell?.contains(e.target as Node)) return;
+                  router.push(`/documents/${doc.id}`);
+                }}
               >
                 <td className="px-4 py-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -262,7 +275,11 @@ export function DocumentTable({
                     {formatDate(doc.createdAt)}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td
+                  data-actions-cell
+                  className="px-4 py-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex items-center justify-end gap-1">
                     <Button
                       variant="secondary"
